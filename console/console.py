@@ -41,12 +41,17 @@ class AppEngineInterpreter(code.InteractiveInterpreter):
         self.buf    = StringIO.StringIO()
 
         self.output  = None
-        
+
     def getPending(self):
-        return ''
+        pending = memcache.get('pending')
+        if pending is None:
+            pending = ''
+        return pending
     
     def setPending(self, pending):
-        return pending
+        result = memcache.set('pending', pending)
+        if result == False:
+            raise Exception, 'Failed to set the pending value in memcache'
 
     def runsource(self, source, *args, **kw):
         logging.debug('self: %s' % self)
