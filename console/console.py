@@ -54,12 +54,18 @@ class AppEngineInterpreter(code.InteractiveInterpreter):
 class Console(webapp.RequestHandler):
     def __init__(self):
         self.engine = AppEngineInterpreter(globals())
+        #self.engine = AppEngineInterpreter(locals())
+        #self.engine = AppEngineInterpreter()
 
     def write(self, *args, **kw):
         self.response.out.write(*args, **kw)
 
     def get(self):
         code = self.request.get('code')
+
+        # Force processing the whole thing.
+        code += '\n'
+
         result = self.engine.runsource(code)
         response = {
             'in' : code,
