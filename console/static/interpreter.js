@@ -42,7 +42,7 @@ InterpreterManager.prototype.banner = function () {
     appendChildNodes("interpreter_output",
         SPAN({"class": "banner"},
             // TODO: put the version here.
-            "App Engine Console" + " [client: " + ua + "]"
+            "App Engine Console" + " [" + ua + "]"
         ),
         BR()
     );
