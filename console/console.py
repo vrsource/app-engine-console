@@ -15,16 +15,30 @@
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import cgi
+
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-class MainPage(webapp.RequestHandler):
+import logging
+
+class Console(webapp.RequestHandler):
+  def write(self, *args, **kw):
+    self.response.out.write(*args, **kw)
+
   def get(self):
     self.response.headers['Content-Type'] = 'text/plain'
-    self.response.out.write('Hi!')
+    self.write('Not yet implemented')
 
-application = webapp.WSGIApplication( [('/', MainPage)], debug=True)
+  def post(self):
+    code = self.request.get('code')
+    result = code
+
+    self.response.headers['Content-Type'] = 'text/plain'
+    write(result)
+
+application = webapp.WSGIApplication([('/console', Console)], debug=True)
 
 def main():
   run_wsgi_app(application)
