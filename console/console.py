@@ -24,24 +24,24 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 class Console(webapp.RequestHandler):
-  def write(self, *args, **kw):
-    self.response.out.write(*args, **kw)
+    def write(self, *args, **kw):
+        self.response.out.write(*args, **kw)
 
-  def get(self):
-    code = self.request.get('code')
-    result = code
-    response = {
-        'in' : code,
-        'out': result,
-    }
+    def get(self):
+        code = self.request.get('code')
+        result = code
+        response = {
+            'in' : code,
+            'out': result,
+        }
 
-    self.response.headers['Content-Type'] = 'application/x-javascript'
-    self.write(simplejson.dumps(response))
+        self.response.headers['Content-Type'] = 'application/x-javascript'
+        self.write(simplejson.dumps(response))
 
 application = webapp.WSGIApplication([('/console', Console)], debug=True)
 
 def main():
-  run_wsgi_app(application)
+    run_wsgi_app(application)
 
 if __name__ == "__main__":
-  main()
+    main()
