@@ -30,6 +30,8 @@ import __builtin__
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.api import memcache
+
+from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 class AppEngineInterpreter(code.InteractiveInterpreter):
@@ -116,7 +118,15 @@ class Banner(webapp.RequestHandler):
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.response.out.write(simplejson.dumps({'banner':banner}))
 
+class Console(webapp.RequestHandler):
+    def get(self):
+        values = {}
+
+        path = os.path.join(os.path.dirname(__file__), 'templates/console.html')
+        self.response.out.write(template.render(path, values))
+
 application = webapp.WSGIApplication([
+    ('/'         , Console),
     ('/statement', Statement),
     ('/banner'   , Banner),
 ], debug=True)
