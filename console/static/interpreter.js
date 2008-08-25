@@ -342,6 +342,8 @@ window.showPrompt = function(continuing) {
     appendChildNodes("interpreter_output",
         SPAN({"class": "code"}, promptStr)
     );
+
+    interpreterManager.doScroll();
 };
 
 window.clear = function () {
