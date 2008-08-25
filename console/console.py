@@ -83,7 +83,7 @@ class AppEngineInterpreter(code.InteractiveInterpreter):
 
         return result
 
-class Console(webapp.RequestHandler):
+class Statement(webapp.RequestHandler):
     def __init__(self):
         self.engine = AppEngineInterpreter(globals())
         #self.engine = AppEngineInterpreter(locals())
@@ -117,8 +117,8 @@ class Banner(webapp.RequestHandler):
         self.response.out.write(simplejson.dumps({'banner':banner}))
 
 application = webapp.WSGIApplication([
-    ('/console', Console),
-    ('/banner', Banner),
+    ('/statement', Statement),
+    ('/banner'   , Banner),
 ], debug=True)
 
 def main():
