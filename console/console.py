@@ -15,6 +15,7 @@
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import os
 import sys
 import cgi
 import code
@@ -110,7 +111,7 @@ class Banner(webapp.RequestHandler):
         logging.debug('Fetching banner')
 
         copyright = 'Type "help", "copyright", "credits" or "license" for more information.'
-        banner = "Python %s on %s\n%s" % (sys.version, sys.platform, copyright)
+        banner = "Python %s on %s\n%s\n(%s)" % (sys.version, sys.platform, copyright, os.environ['SERVER_SOFTWARE'])
 
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.response.out.write(simplejson.dumps({'banner':banner}))

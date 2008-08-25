@@ -33,20 +33,6 @@ InterpreterManager.prototype.initialize = function () {
 };
 
 InterpreterManager.prototype.banner = function () {
-    var _ua = window.navigator.userAgent;
-    var ua = _ua.replace(/^Mozilla\/.*?\(.*?\)\s*/, "");
-    if (ua == "") {
-        // MSIE
-        ua = _ua.replace(/^Mozilla\/4\.0 \(compatible; MS(IE .*?);.*$/, "$1");
-    }
-    appendChildNodes("interpreter_output",
-        SPAN({"class": "banner"},
-            // TODO: put the version here.
-            "App Engine Console" + " [" + ua + "]"
-        ),
-        BR()
-    );
-
     var d = loadJSONDoc('/banner');
 
     var fetchSuccess = function(response) {
@@ -54,7 +40,7 @@ InterpreterManager.prototype.banner = function () {
             SPAN({'class': 'banner'}, response.banner),
             BR()
         );
-    window.showPrompt();
+        window.showPrompt();
     };
 
     var fetchFail = function(err) {
@@ -62,7 +48,7 @@ InterpreterManager.prototype.banner = function () {
             SPAN({'class': 'error'}, '(Failed to fetch Python banner)'),
             BR()
         );
-    window.showPrompt();
+        window.showPrompt();
     };
 
     d.addCallbacks(fetchSuccess, fetchFail);
