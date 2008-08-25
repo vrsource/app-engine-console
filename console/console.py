@@ -16,13 +16,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import cgi
+import logging
 import simplejson
 
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
-
-import logging
 
 class Console(webapp.RequestHandler):
   def write(self, *args, **kw):
