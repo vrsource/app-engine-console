@@ -279,7 +279,6 @@ InterpreterManager.prototype.runCode = function (allCode) {
             // TODO: confirm that the code we send is unmolested coming back
             // from the server.
             
-            jason = response;
             if(!isEmpty(response.out))
                 consoleWindow.showResult(response.out);
 
