@@ -28,6 +28,7 @@ InterpreterManager.prototype.initialize = function () {
 
     window.ps1 = '>>> ';
     window.ps2 = '... ';
+    window.showPrompt();
 
     window.help = this.help;
     this.help.NAME = 'type help(func) for help on a MochiKit function';
@@ -265,7 +266,7 @@ InterpreterManager.prototype.doSubmit = function () {
         code = code.substr(0, code.length - 2);
     }
     appendChildNodes("interpreter_output",
-        SPAN({"class": "code"}, window.ps1, code),
+        SPAN({"class": "code"}, code),
         BR()
     );
     this.lines.push(code);
@@ -294,10 +295,13 @@ InterpreterManager.prototype.runCode = function (allCode) {
             jason = response;
             if(!isEmpty(response.out))
                 consoleWindow.showResult(response.out);
+
+            window.showPrompt(response.result);
         };
 
         var fetchFail = function(err) {
             alert('Query failed');
+            // TODO: Perhaps append the prompt.
         };
 
         d.addCallbacks(fetchSuccess, fetchFail);
@@ -328,6 +332,16 @@ window.writeln = function () {
         BR()
     );
     interpreterManager.doScroll();
+};
+
+window.showPrompt = function(continuing) {
+    var promptStr = window.ps1;
+    if(continuing)
+        promptStr = window.ps2;
+
+    appendChildNodes("interpreter_output",
+        SPAN({"class": "code"}, promptStr)
+    );
 };
 
 window.clear = function () {

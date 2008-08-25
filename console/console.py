@@ -65,9 +65,6 @@ class Console(webapp.RequestHandler):
     def get(self):
         code = self.request.get('code')
 
-        # Force processing the whole thing.
-        code += '\n'
-
         result = self.engine.runsource(code)
         response = {
             'in' : code,
