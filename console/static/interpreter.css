@@ -1,0 +1,72 @@
+/* App Engine Console main style
+ *
+ * This file is part of App Engine Console.
+ *
+ * App Engine Console is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * App Engine Console is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with App Engine Console; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+h1 {
+    font-size: 2em;
+    color: #4B4545;
+    text-align: center;
+}
+
+textarea.textbox {
+    font-family: Monaco, "lucida console", Courier;
+    border: 1px solid #CCCCCC;
+    font-size: .60em; 
+    padding: 2px 4px;
+    margin-top: .3em;
+}
+
+input.textbox {
+    font-family: Monaco, "lucida console", Courier;
+    border: 1px solid #CCCCCC;
+    font-size: .60em; 
+    padding: 2px 4px;
+    margin-top: .3em;
+}
+
+#interpreter_area {
+    display: block;
+    border: 1px solid #CCCCCC;
+    padding: 2px 4px;
+    margin-top: .3em;
+    width: 600px;
+    height: 300px;
+    overflow: auto;
+}
+
+#interpreter_output {
+    display: inline;
+    font-family: Monaco, "lucida console", Courier;
+    font-size: .60em;
+}
+
+#interpreter_output span {
+    white-space: -moz-pre-wrap; /* Mozilla */
+    white-space: -o-pre-wrap; /* Opera 7 */
+    white-space: pre-wrap; /* CSS 2.1 */
+    white-space: pre-line; /* CSS 3 (and 2.1 as well, actually) */
+    word-wrap: break-word; /* IE */
+    wrap-option: emergency; /* CSS 3 */
+}
+
+input.textbox:focus { background-color: #FFFEE3; }
+
+.code { color: blue; }
+.data { color: black; }
+.error { color: red; }
+.banner { color: green; }
+.invisible { display: none; }
