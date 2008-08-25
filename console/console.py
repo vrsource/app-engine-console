@@ -28,10 +28,6 @@ class Console(webapp.RequestHandler):
   def write(self, *args, **kw):
     self.response.out.write(*args, **kw)
 
-  def old_get(self):
-    self.response.headers['Content-Type'] = 'text/plain'
-    self.write('Not yet implemented')
-
   def get(self):
     code = self.request.get('code')
     result = code

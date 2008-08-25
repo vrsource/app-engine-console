@@ -275,8 +275,7 @@ InterpreterManager.prototype.runCode = function (allCode) {
     var consoleWindow = this;
 
     try {
-        var url = "/console?code=" + allCode;
-        var d = loadJSONDoc(url);
+        var d = loadJSONDoc('/console', {'code':allCode});
 
         var fetchSuccess = function(response) {
             // TODO: confirm that the code we send is unmolested coming back
