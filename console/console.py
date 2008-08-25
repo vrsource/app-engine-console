@@ -32,24 +32,44 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 class AppEngineInterpreter(code.InteractiveInterpreter):
     """An interactive interpreter suitable for running within the App Engine."""
+    __shared_state = {}
+
     def __init__(self, *args, **kw):
+        self.__dict__ = self.__shared_state
         code.InteractiveInterpreter.__init__(self, *args, **kw)
 
         self.stdout = sys.stdout
         self.stderr = sys.stderr
         self.buf    = StringIO.StringIO()
+
+        self.output  = None
+        self.pending = ''
         
-    def runsource(self, *args, **kw):
-        logging.debug('source: %s' % args[0])
-        self.buf.truncate(0)
+    def runsource(self, source, *args, **kw):
+        logging.debug('self: %s' % self)
+        logging.debug('input source: %s' % source)
+
+        if self.pending:
+            source = self.pending + source
+            logging.debug('full source:\n%s' % source)
+        else:
+            logging.debug('not pending')
 
         sys.stdout, sys.stderr = self.buf, self.buf
-        result = code.InteractiveInterpreter.runsource(self, *args, **kw)
+        result = code.InteractiveInterpreter.runsource(self, source, *args, **kw)
         sys.stdout, sys.stderr = self.stdout, self.stderr
 
-        self.buf.seek(0)
-        logging.debug('result: %s' % self.buf.read())
-        self.buf.seek(0)
+        if result == False:
+            self.buf.seek(0)
+            self.output = self.buf.read()
+            self.buf.truncate(0)
+
+            logging.debug('Execution completed: %s' % self.output)
+            self.pending = ''
+        else:
+            logging.debug('Code not complete, saving pending source')
+            self.pending = '%s\n' % source
+            self.output = ''
 
         return result
 
@@ -68,16 +88,18 @@ class Console(webapp.RequestHandler):
         result = self.engine.runsource(code)
         response = {
             'in' : code,
-            'out': self.engine.buf.read().strip(),
+            'out': self.engine.output.strip(),
             'result': result,
         }
 
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.write(simplejson.dumps(response))
+        logging.debug('sending')
 
 application = webapp.WSGIApplication([('/console', Console)], debug=True)
 
 def main():
+    logging.getLogger().setLevel(logging.DEBUG)
     run_wsgi_app(application)
 
 if __name__ == "__main__":
