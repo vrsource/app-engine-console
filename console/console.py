@@ -28,14 +28,12 @@ import __builtin__
 
 from google.appengine.api import users
 from google.appengine.ext import webapp
+from google.appengine.api import memcache
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 class AppEngineInterpreter(code.InteractiveInterpreter):
     """An interactive interpreter suitable for running within the App Engine."""
-    __shared_state = {}
-
     def __init__(self, *args, **kw):
-        self.__dict__ = self.__shared_state
         code.InteractiveInterpreter.__init__(self, *args, **kw)
 
         self.stdout = sys.stdout
@@ -43,14 +41,20 @@ class AppEngineInterpreter(code.InteractiveInterpreter):
         self.buf    = StringIO.StringIO()
 
         self.output  = None
-        self.pending = ''
         
+    def getPending(self):
+        return ''
+    
+    def setPending(self, pending):
+        return pending
+
     def runsource(self, source, *args, **kw):
         logging.debug('self: %s' % self)
         logging.debug('input source: %s' % source)
 
-        if self.pending:
-            source = self.pending + source
+        pending = self.getPending()
+        if pending:
+            source = pending + source
             logging.debug('full source:\n%s' % source)
         else:
             logging.debug('not pending')
@@ -65,10 +69,10 @@ class AppEngineInterpreter(code.InteractiveInterpreter):
             self.buf.truncate(0)
 
             logging.debug('Execution completed: %s' % self.output)
-            self.pending = ''
+            self.setPending('')
         else:
             logging.debug('Code not complete, saving pending source')
-            self.pending = '%s\n' % source
+            self.setPending('%s\n' % source)
             self.output = ''
 
         return result
