@@ -16,6 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import cgi
+import simplejson
 
 from google.appengine.api import users
 from google.appengine.ext import webapp
@@ -27,16 +28,20 @@ class Console(webapp.RequestHandler):
   def write(self, *args, **kw):
     self.response.out.write(*args, **kw)
 
-  def get(self):
+  def old_get(self):
     self.response.headers['Content-Type'] = 'text/plain'
     self.write('Not yet implemented')
 
-  def post(self):
+  def get(self):
     code = self.request.get('code')
     result = code
+    response = {
+        'in' : code,
+        'out': result,
+    }
 
-    self.response.headers['Content-Type'] = 'text/plain'
-    write(result)
+    self.response.headers['Content-Type'] = 'application/x-javascript'
+    self.write(simplejson.dumps(response))
 
 application = webapp.WSGIApplication([('/console', Console)], debug=True)
 

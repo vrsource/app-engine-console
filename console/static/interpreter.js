@@ -272,15 +272,30 @@ InterpreterManager.prototype.doSubmit = function () {
 };
 
 InterpreterManager.prototype.runCode = function (allCode) {
-    var res;
+    var consoleWindow = this;
+
     try {
-        res = this.doEval(allCode);
+        var url = "/console?code=" + allCode;
+        var d = loadJSONDoc(url);
+
+        var fetchSuccess = function(response) {
+            // TODO: confirm that the code we send is unmolested coming back
+            // from the server.
+            
+            jason = response;
+            consoleWindow.showResult(response.out);
+        };
+
+        var fetchFail = function(err) {
+            alert('Query failed');
+        };
+
+        d.addCallbacks(fetchSuccess, fetchFail);
     } catch (e) {
         // mozilla shows some keys more than once!
         this.showError(e);
         return;
     }
-    this.showResult(res);
 };
 
 InterpreterManager.prototype.showResult = function (res) {
@@ -289,7 +304,8 @@ InterpreterManager.prototype.showResult = function (res) {
     }
     if (typeof(res) != "undefined") {
         appendChildNodes("interpreter_output",
-            SPAN({"class": "data"}, repr(res)),
+            //SPAN({"class": "data"}, repr(res)),
+            SPAN({"class": "data"}, res),
             BR()
         );
         this.doScroll();
