@@ -105,7 +105,20 @@ class Console(webapp.RequestHandler):
         self.write(simplejson.dumps(response))
         logging.debug('sending')
 
-application = webapp.WSGIApplication([('/console', Console)], debug=True)
+class Banner(webapp.RequestHandler):
+    def get(self):
+        logging.debug('Fetching banner')
+
+        copyright = 'Type "help", "copyright", "credits" or "license" for more information.'
+        banner = "Python %s on %s\n%s" % (sys.version, sys.platform, copyright)
+
+        self.response.headers['Content-Type'] = 'application/x-javascript'
+        self.response.out.write(simplejson.dumps({'banner':banner}))
+
+application = webapp.WSGIApplication([
+    ('/console', Console),
+    ('/banner', Banner),
+], debug=True)
 
 def main():
     logging.getLogger().setLevel(logging.DEBUG)

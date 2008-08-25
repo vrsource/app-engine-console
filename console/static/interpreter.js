@@ -27,7 +27,6 @@ InterpreterManager.prototype.initialize = function () {
 
     window.ps1 = '>>> ';
     window.ps2 = '... ';
-    window.showPrompt();
 
     window.help = this.help;
     this.help.NAME = 'type help(func) for help on a MochiKit function';
@@ -42,13 +41,31 @@ InterpreterManager.prototype.banner = function () {
     }
     appendChildNodes("interpreter_output",
         SPAN({"class": "banner"},
-            "MochiKit v" + MochiKit.Base.VERSION + " [" + ua + "]",
-            BR(),
-            "Type your expression in the input box below and press return, or see the notes below for more information.",
-            BR()
+            // TODO: put the version here.
+            "App Engine Console" + " [client: " + ua + "]"
         ),
         BR()
     );
+
+    var d = loadJSONDoc('/banner');
+
+    var fetchSuccess = function(response) {
+        appendChildNodes('interpreter_output',
+            SPAN({'class': 'banner'}, response.banner),
+            BR()
+        );
+    window.showPrompt();
+    };
+
+    var fetchFail = function(err) {
+        appendChildNodes('interpreter_output',
+            SPAN({'class': 'error'}, '(Failed to fetch Python banner)'),
+            BR()
+        );
+    window.showPrompt();
+    };
+
+    d.addCallbacks(fetchSuccess, fetchFail);
 };
 
 InterpreterManager.prototype.submit = function (event) {
