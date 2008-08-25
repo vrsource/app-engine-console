@@ -249,6 +249,12 @@ InterpreterManager.prototype.doSubmit = function () {
     var elem = getElement("interpreter_text");
     var code = elem.value;
     elem.value = "";
+
+    if(code == 'clear') {
+        window.clear();
+        return;
+    }
+
     var isContinuation = false;
     if (code.length >= 2 && code.lastIndexOf("//") == code.length - 2) {
         isContinuation = true;
