@@ -25,6 +25,10 @@ InterpreterManager.prototype.initialize = function () {
             return eval(arguments[0]);
         }
     }
+
+    window.ps1 = '>>> ';
+    window.ps2 = '... ';
+
     window.help = this.help;
     this.help.NAME = 'type help(func) for help on a MochiKit function';
 };
@@ -137,7 +141,7 @@ InterpreterManager.prototype.moveHistory = function (dir) {
 InterpreterManager.prototype.runMultipleLines = function (text) {
     var lines = rstrip(text).replace("\r\n", "\n").split(/\n/);
     appendChildNodes("interpreter_output",
-        SPAN({"class": "code"}, ">>> ", izip(lines, imap(BR, cycle([null]))))
+        SPAN({"class": "code"}, window.ps1, izip(lines, imap(BR, cycle([null]))))
     );
     this.runCode(text);
 }
@@ -261,7 +265,7 @@ InterpreterManager.prototype.doSubmit = function () {
         code = code.substr(0, code.length - 2);
     }
     appendChildNodes("interpreter_output",
-        SPAN({"class": "code"}, ">>> ", code),
+        SPAN({"class": "code"}, window.ps1, code),
         BR()
     );
     this.lines.push(code);
