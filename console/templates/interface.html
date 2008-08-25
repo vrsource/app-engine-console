@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+{# App Engine Console - main interface template                               #}
+{#                                                                            #}
+{# This file is part of App Engine Console.                                   #}
+{#                                                                            #}
+{# App Engine Console is free software; you can redistribute it and/or modify #}
+{# it under the terms of the GNU General Public License as published by       #}
+{# the Free Software Foundation, version 3 of the License.                    #}
+{#                                                                            #}
+{# App Engine Console is distributed in the hope that it will be useful,      #}
+{# but WITHOUT ANY WARRANTY; without even the implied warranty of             #}
+{# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #}
+{# GNU General Public License for more details.                               #}
+{#                                                                            #}
+{# You should have received a copy of the GNU General Public License          #}
+{# along with App Engine Console; if not, write to the Free Software          #}
+{# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA  #}
+<head>
+  <title>
+    {%if is_dev%}
+      (DEV)
+    {%endif%}
+    App Engine Console
+  </title>
+  <link rel="icon" href="/favicon.ico" />
+  <link type="text/css" rel="stylesheet" href="/static/console.css" />
+  <link href="/static/interpreter.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="/static/MochiKit.js"></script>
+  <script type="text/javascript" src="/static/interpreter.js"></script>
+</head>
+<body>
+
+<div align="right">
+    {%if is_dev%}
+        <div style="float:left; color:green; font-weight:bold">DEVELOPMENT SERVER</div>
+    {%else%}
+        <div style="float:left; font-weight:bold"><i>Proven</i> App Engine Console</div>
+    {%endif%}
+
+    {%if user%}
+        <b>{{email}} ({{user}})</b>
+        |
+    {%endif%}
+
+    <a class="novisit" target="_blank" href="http://www.proven-corporation.com/software/appengine-console/">Project</a>
+    |
+    <a class="novisit" href="mailto:jhs@proven-corporation.com">Contact Me</a>
+    |
+    {%if user%}
+        <a class="novisit" href="{{sign_out}}">Sign out</a>
+    {% else %}
+        <a class="novisit" href="{{sign_in}}">Sign in</a>
+    {%endif%}
+</div>
+
+<div class="mainmenu">
+  {%block mainmenu%}
+      <a href="FIXME">Console</a>
+      <a href="FIXME">FIXME</a>
+  {%endblock%}
+</div>
+
+<div class="mainmenu2">
+    {%block mainmenu2%}
+        <a href="foo">Foo</a>
+        |
+        <a href="bar">Bar</a>
+        |
+        <a href="baz">Baz</a>
+        |
+        <a href="quux">Quux</a>
+    {%endblock%}
+</div>
+
+<div>
+    {% block body %}
+        <p>
+            This provides basic console access to the Google App Engine environment.
+        </p>
+        <div class="issue-list">
+            {% block form %}
+                CONSOLE FORM GOES HERE
+            {% endblock %}
+        </div>
+
+        <div>
+            Notes:
+            <ul>
+                <li>
+                    Use <tt>clear</tt> to clear the interpreter window.
+                </li>
+                <li>
+                    Up and down arrow keys work as a rudimentary history
+                </li>
+            </ul>
+        </div>
+    {% endblock %}
+</div>
+
+<p />
+<div style="float: left;">
+  <a target="_blank" href="http://code.google.com/appengine/"><img border="0"
+   src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif"
+   alt="Powered by Google App Engine" /></a>
+</div>
+
+<div class="extra" style="font-size: 9pt; float: right;">
+  {%include "console_revision.html"%}
+</div>
+
+</body>
+</html>

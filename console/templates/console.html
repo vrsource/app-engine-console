@@ -1,40 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-    <head>
-        <title>App Engine Console</title>
-        <link href="/static/interpreter.css" rel="stylesheet" type="text/css" />
-        <script type="text/javascript" src="/static/MochiKit.js"></script>
-        <script type="text/javascript" src="/static/interpreter.js"></script>
-    </head>
-    <body>
-        <h1>
-            App Engine Console
-        </h1>
-        <div>
-            <p>
-                This provides basic console access to the Google App Engine
-                environment.
-            </p>
-        </div>
+{% extends "interface.html" %}
 
-        <form id="interpreter_form" autocomplete="off">
-            <div id="interpreter_area">
-                <div id="interpreter_output"></div>
-            </div>
-            <div id="oneline">
-                <input id="interpreter_text" name="input_text" type="text" class="textbox" />
-            </div>
-        </form>
-        <div>
-            Notes:
-            <ul>
-                <li>
-                    Use <tt>clear</tt> to clear the interpreter window.
-                </li>
-                <li>
-                    Up and down arrow keys work as a rudimentary history
-                </li>
-            </ul>
+{% block form %}
+    <form id="interpreter_form" autocomplete="off">
+        <div id="interpreter_area">
+            <div id="interpreter_output"></div>
         </div>
-    </body>
-</html>
+        <div id="oneline">
+            <input id="interpreter_text" name="input_text" type="text" class="textbox" />
+        </div>
+    </form>
+{% endblock %}

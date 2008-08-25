@@ -33,7 +33,6 @@ input.textbox {
 
 #interpreter_area {
     display: block;
-    border: 1px solid #CCCCCC;
     padding: 2px 0;
     width: 100%;
     margin-top: .3em;

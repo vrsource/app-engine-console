@@ -120,7 +120,15 @@ class Banner(webapp.RequestHandler):
 
 class Console(webapp.RequestHandler):
     def get(self):
-        values = {}
+        values = {
+            'is_dev': os.environ['SERVER_SOFTWARE'].startswith('Dev'),
+        }
+
+        user = users.get_current_user()
+        if user:
+            values['user']     = user
+            values['email']    = user.email()
+            values['nickname'] = user.nickname()
 
         path = os.path.join(os.path.dirname(__file__), 'templates/console.html')
         self.response.out.write(template.render(path, values))
