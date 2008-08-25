@@ -282,7 +282,8 @@ InterpreterManager.prototype.runCode = function (allCode) {
             // from the server.
             
             jason = response;
-            consoleWindow.showResult(response.out);
+            if(!isEmpty(response.out))
+                consoleWindow.showResult(response.out);
         };
 
         var fetchFail = function(err) {
