@@ -55,6 +55,10 @@ input.textbox {
     wrap-option: emergency; /* CSS 3 */
 }
 
+div.promptBox {
+    padding-right: 2px;
+}
+
 input.textbox:focus { background-color: #FFFEE3; }
 
 .code { color: blue; }

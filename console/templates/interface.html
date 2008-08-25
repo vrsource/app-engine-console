@@ -78,11 +78,17 @@
         <p>
             This provides basic console access to the Google App Engine environment.
         </p>
-        <div class="issue-list">
-            {% block form %}
-                CONSOLE FORM GOES HERE
+
+        <form id="interpreter_form" autocomplete="off">
+            <div class="issue-list">
+                {% block output %}
+                    OUTPUT WINDOW GOES HERE
+                {% endblock %}
+            </div>
+            {% block input %}
+                INPUT LINE GOES HERE
             {% endblock %}
-        </div>
+        </form>
 
         <div>
             Notes:
