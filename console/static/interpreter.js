@@ -9,7 +9,6 @@ InterpreterManager = function () {
 
 InterpreterManager.prototype.initialize = function () {
     connect("interpreter_text", "onkeyup", this.keyUp);
-    connect("interpreter_textarea", "onkeydown", this.areaKeyDown);
     connect("interpreter_form", "onsubmit", this.submit);
     getElement("interpreter_text").focus();
 
@@ -146,18 +145,6 @@ InterpreterManager.prototype.runMultipleLines = function (text) {
     );
     this.runCode(text);
 }
-
-InterpreterManager.prototype.areaKeyDown = function (e) {
-    var mod = e.modifier();
-    var hasMod = mod.alt || mod.ctrl || mod.meta;
-    if (e.key().string == 'KEY_ENTER' && hasMod) {
-        var elem = getElement("interpreter_textarea");
-        var text = elem.value;
-        elem.value = "";
-        this.runMultipleLines(text);
-        e.stop();
-    }
-};
 
 InterpreterManager.prototype.keyUp = function (e) {
     var key = e.key();
