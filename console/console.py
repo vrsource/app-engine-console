@@ -44,12 +44,14 @@ class AppEngineInterpreter(code.InteractiveInterpreter):
         self.buf.truncate(0)
 
         sys.stdout, sys.stderr = self.buf, self.buf
-        code.InteractiveInterpreter.runsource(self, *args, **kw)
+        result = code.InteractiveInterpreter.runsource(self, *args, **kw)
         sys.stdout, sys.stderr = self.stdout, self.stderr
 
         self.buf.seek(0)
         logging.debug('result: %s' % self.buf.read())
         self.buf.seek(0)
+
+        return result
 
 class Console(webapp.RequestHandler):
     def __init__(self):
