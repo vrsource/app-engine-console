@@ -715,13 +715,6 @@ span.visualtab {
   position: absolute;
 }
 
-.code {
-  background-color: #eeeeec;
-  padding: 3px;
-  border: 1px solid lightgray;
-  margin-top: .8em;
-}
-
 #table-top {
   background-color: white;
   -moz-border-radius: 5px 5px 5px 5px;

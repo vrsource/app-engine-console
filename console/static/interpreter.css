@@ -23,7 +23,7 @@ h1 {
 }
 
 input.textbox {
-    font-family: Monaco, "lucida console", Courier;
+    font-family: monospace, "lucida console", Courier;
     border: 1px solid #CCCCCC;
     font-size: .60em; 
     padding: 2px 0;
@@ -42,7 +42,7 @@ input.textbox {
 
 #interpreter_output {
     display: inline;
-    font-family: Monaco, "lucida console", Courier;
+    font-family: monospace, "lucida console", Courier;
     font-size: .60em;
 }
 
