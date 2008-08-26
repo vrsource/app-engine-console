@@ -16,6 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import os
+import re
 import sys
 import cgi
 import code
@@ -118,20 +119,32 @@ class Banner(webapp.RequestHandler):
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.response.out.write(simplejson.dumps({'banner':banner}))
 
-class Console(webapp.RequestHandler):
-    def get(self):
-        values = {
-            'is_dev': os.environ['SERVER_SOFTWARE'].startswith('Dev'),
-        }
+class Page(webapp.RequestHandler):
+    """A human-visible "page" that presents itself to a person."""
+    templates = os.path.join(os.path.dirname(__file__), 'templates')
 
+    def __init__(self, *args, **kw):
+        webapp.RequestHandler.__init__(self, *args, **kw)
+        self.values = {}
+
+        myClass = re.search(r"<class '.*\.(.*)'", str(self.__class__)).groups()[0]
+        logging.debug('My class: %s' % myClass)
+        templateFile = '%s.html' % myClass.lower()
+        self.template = os.path.join(self.templates, templateFile)
+
+    def write(self):
+        self.response.out.write(template.render(self.template, self.values))
+
+class Console(Page):
+    def get(self):
+        self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
         user = users.get_current_user()
         if user:
-            values['user']     = user
-            values['email']    = user.email()
-            values['nickname'] = user.nickname()
+            self.values['user']     = user
+            self.values['email']    = user.email()
+            self.values['nickname'] = user.nickname()
 
-        path = os.path.join(os.path.dirname(__file__), 'templates/console.html')
-        self.response.out.write(template.render(path, values))
+        self.write()
 
 application = webapp.WSGIApplication([
     ('/'         , Console),
