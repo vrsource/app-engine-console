@@ -1,4 +1,4 @@
-{# Console interface template
+{# Usage instructions template
  #
  # This file is part of App Engine Console.
  #
@@ -16,18 +16,19 @@
  # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  #}
 
-{% extends "interface.html" %}
+{% extends "help.html" %}
 
-{% block body %}
-    <form id="interpreter_form" autocomplete="off">
-        <div class="issue-list">
-            <div id="interpreter_area">
-                <div id="interpreter_output"></div>
-            </div>
-        </div>
+{% block helpcontent %}
+    <p>
+        This provides basic console access to the Google App Engine environment.
+    </p>
 
-        <div id="oneline" class="promptBox">
-            <input id="interpreter_text" name="input_text" type="text" class="textbox" />
-        </div>
-    </form>
+    <ul>
+        <li>
+            Use <tt>clear</tt> to clear the interpreter window.
+        </li>
+        <li>
+            Up and down arrow keys work as a rudimentary history
+        </li>
+    </ul>
 {% endblock %}

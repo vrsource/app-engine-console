@@ -19,22 +19,9 @@
 {% extends "interface.html" %}
 
 {% block body %}
-    <p>
-        This provides basic console access to the Google App Engine environment.
-    </p>
-
-    <div>
-        Usage:
-        <ul>
-            <li>
-                Use <tt>clear</tt> to clear the interpreter window.
-            </li>
-            <li>
-                Up and down arrow keys work as a rudimentary history
-            </li>
-        </ul>
-    </div>
-    {{secondary}}
+    {% block helpcontent %}
+        HELP CONTENTS GOES HERE
+    {% endblock %}
 {% endblock %}
 
 {% block poweredby %}
