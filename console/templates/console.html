@@ -1,13 +1,15 @@
 {% extends "interface.html" %}
 
-{% block output %}
-    <div id="interpreter_area">
-        <div id="interpreter_output"></div>
-    </div>
-{% endblock %}
+{% block body %}
+    <form id="interpreter_form" autocomplete="off">
+        <div class="issue-list">
+            <div id="interpreter_area">
+                <div id="interpreter_output"></div>
+            </div>
+        </div>
 
-{% block input %}
-    <div id="oneline" class="promptBox">
-        <input id="interpreter_text" name="input_text" type="text" class="textbox" />
-    </div>
+        <div id="oneline" class="promptBox">
+            <input id="interpreter_text" name="input_text" type="text" class="textbox" />
+        </div>
+    </form>
 {% endblock %}

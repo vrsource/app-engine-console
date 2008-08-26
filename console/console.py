@@ -125,19 +125,25 @@ class Page(webapp.RequestHandler):
 
     def __init__(self, *args, **kw):
         webapp.RequestHandler.__init__(self, *args, **kw)
-        self.values = {}
 
         myClass = re.search(r"<class '.*\.(.*)'", str(self.__class__)).groups()[0]
-        logging.debug('My class: %s' % myClass)
-        templateFile = '%s.html' % myClass.lower()
+        self.page = myClass.lower()
+
+        templateFile = '%s.html' % self.page
         self.template = os.path.join(self.templates, templateFile)
 
+        self.values = {}
+        self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
+        self.values['path']   = os.environ['PATH_INFO']
+        self.values['pages']  = [ {'name':'Console', 'href':'/'},
+                                  {'name':'Help'   , 'href':'/help'} ]
+
     def write(self):
+        logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))
         self.response.out.write(template.render(self.template, self.values))
 
 class Console(Page):
     def get(self):
-        self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
         user = users.get_current_user()
         if user:
             self.values['user']     = user
@@ -146,8 +152,13 @@ class Console(Page):
 
         self.write()
 
+class Help(Page):
+    def get(self):
+        self.write()
+
 application = webapp.WSGIApplication([
     ('/'         , Console),
+    ('/help'     , Help),
     ('/statement', Statement),
     ('/banner'   , Banner),
 ], debug=True)

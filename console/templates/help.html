@@ -1,0 +1,51 @@
+{# Console help page template
+ #
+ # This file is part of App Engine Console.
+ #
+ # App Engine Console is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation, version 3 of the License.
+ #
+ # App Engine Console is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License
+ # along with App Engine Console; if not, write to the Free Software
+ # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ #}
+
+{% extends "interface.html" %}
+
+{% block body %}
+    <p>
+        This provides basic console access to the Google App Engine environment.
+    </p>
+
+    <div>
+        Usage:
+        <ul>
+            <li>
+                Use <tt>clear</tt> to clear the interpreter window.
+            </li>
+            <li>
+                Up and down arrow keys work as a rudimentary history
+            </li>
+        </ul>
+    </div>
+
+{% endblock %}
+
+{%block mainmenu2%}
+    &nbsp;
+{%endblock%}
+
+{% block poweredby %}
+    <p />
+    <div style="float: left;">
+      <a target="_blank" href="http://code.google.com/appengine/"><img border="0"
+       src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif"
+       alt="Powered by Google App Engine" /></a>
+    </div>
+{% endblock %}

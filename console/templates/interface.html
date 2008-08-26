@@ -54,8 +54,13 @@
 
 <div class="mainmenu">
   {%block mainmenu%}
-      <a href="/" class="active">Console</a>
-      <a href="/help/">Help</a>
+      {% for page in pages %}
+          {% ifequal page.href path %}
+              <a href="{{page.href}}" class="active">{{page.name}}</a>
+          {% else %}
+              <a href="{{page.href}}">{{page.name}}</a>
+          {% endifequal %}
+      {% endfor %}
   {%endblock%}
 </div>
 
@@ -73,41 +78,12 @@
 
 <div>
     {% block body %}
-        <p>
-            This provides basic console access to the Google App Engine environment.
-        </p>
-
-        <form id="interpreter_form" autocomplete="off">
-            <div class="issue-list">
-                {% block output %}
-                    OUTPUT WINDOW GOES HERE
-                {% endblock %}
-            </div>
-            {% block input %}
-                INPUT LINE GOES HERE
-            {% endblock %}
-        </form>
-
-        <div>
-            Notes:
-            <ul>
-                <li>
-                    Use <tt>clear</tt> to clear the interpreter window.
-                </li>
-                <li>
-                    Up and down arrow keys work as a rudimentary history
-                </li>
-            </ul>
-        </div>
+        PAGE BODY GOES HERE
     {% endblock %}
 </div>
 
-<p />
-<div style="float: left;">
-  <a target="_blank" href="http://code.google.com/appengine/"><img border="0"
-   src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif"
-   alt="Powered by Google App Engine" /></a>
-</div>
+{% block poweredby %}
+{% endblock %}
 
 <div class="extra" style="font-size: 9pt; float: right;">
   {%include "console_revision.html"%}
