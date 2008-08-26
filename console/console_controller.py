@@ -76,7 +76,7 @@ class Page(webapp.RequestHandler):
         self.values['app']      = self.appID
         self.values['version']  = self.appVersion
         self.values['subpages'] = self.subpages
-        self.values['is_dev']   = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
+        self.values['is_dev']   = os.environ['SERVER_SOFTWARE'].startswith('Dev')
         self.values['pages']    = [ {'name':'Console', 'href':'/'},
                                     {'name':'Help'   , 'href':'/help/'} ]
 
