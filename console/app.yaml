@@ -1,5 +1,5 @@
 application: jhs
-version: %(app_version)s
+version: ${app_version}
 runtime: python
 api_version: 1
 
