@@ -63,6 +63,8 @@ class Banner(webapp.RequestHandler):
 class Page(webapp.RequestHandler):
     """A human-visible "page" that presents itself to a person."""
     templates = os.path.join(os.path.dirname(__file__), 'templates')
+    appID = os.environ['APPLICATION_ID']
+    appVersion = os.environ['CURRENT_VERSION_ID']
 
     def __init__(self, *args, **kw):
         webapp.RequestHandler.__init__(self, *args, **kw)
@@ -71,6 +73,8 @@ class Page(webapp.RequestHandler):
         self.page = myClass.lower()
 
         self.values = {}
+        self.values['app']      = self.appID
+        self.values['version']  = self.appVersion
         self.values['subpages'] = self.subpages
         self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
         self.values['pages']  = [ {'name':'Console', 'href':'/'},
