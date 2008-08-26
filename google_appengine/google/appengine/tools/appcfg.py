@@ -1680,10 +1680,11 @@ class AppCfgApp(object):
       self.parser.error("Directory does not contain an app.yaml "
                         "configuration file.")
 
-    fh = open(appyaml_filename, "r")
-    template = fh.read()
-    fh.close()
-    fh = cStringIO.StringIO(template % os.environ)
+    from string import Template
+    appyaml_content = open(appyaml_filename, "r").read()
+    appyaml_template = Template(appyaml_content)
+    appyaml_config = appyaml_template.substitute(**os.environ)
+    fh = cStringIO.StringIO(appyaml_config)
 
     try:
       appyaml = appinfo.LoadSingleAppInfo(fh)
