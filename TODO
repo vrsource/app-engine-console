@@ -1,3 +1,9 @@
+Bugs
+====
+
+* The last expression value, '_', is not set
+* Probably should send data via HTTP POST
+
 Features
 ========
 
@@ -17,9 +23,3 @@ Features
   development mode
 * Maybe some sort of pastebin integration
 * Maybe talkinator integration
-
-Bugs
-====
-
-* The last expression value, '_', is not set
-* Probably should send data via HTTP POST
