@@ -18,6 +18,12 @@
 
 {% extends "interface.html" %}
 
+{% block mainmenu2 %}
+    <a href="usage">Usage</a>
+    |
+    <a href="bar">About</a>
+{% endblock %}
+
 {% block body %}
     <p>
         This provides basic console access to the Google App Engine environment.
@@ -36,10 +42,6 @@
     </div>
 
 {% endblock %}
-
-{%block mainmenu2%}
-    &nbsp;
-{%endblock%}
 
 {% block poweredby %}
     <p />

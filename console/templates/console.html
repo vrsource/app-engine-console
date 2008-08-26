@@ -1,5 +1,15 @@
 {% extends "interface.html" %}
 
+{% block mainmenu2 %}
+    <a href="foo">Foo</a>
+    |
+    <a href="bar">Bar</a>
+    |
+    <a href="baz">Baz</a>
+    |
+    <a href="quux">Quux</a>
+{% endblock %}
+
 {% block body %}
     <form id="interpreter_form" autocomplete="off">
         <div class="issue-list">
