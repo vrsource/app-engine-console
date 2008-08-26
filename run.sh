@@ -26,7 +26,7 @@ fi
 
 # For Git, the software "version" will be the timestamp of the latest
 # commit to the branch in the repository.
-app_version=`git log --pretty=format:'%ct%n' HEAD^.. | head -1`
+app_version=`git log --pretty=format:'%ct%n' | head -1`
 echo "app_version=$app_version"
 export app_version
 
