@@ -21,146 +21,17 @@ import sys
 import cgi
 import code
 import logging
-import StringIO
-import simplejson
 
-# For some reason, sys.modules wants __builtin__ or else the InteractiveInterpreter
-# will throw exceptions when evaluating expressions.
-import __builtin__
+import console_controller as controller
 
-from google.appengine.api import users
 from google.appengine.ext import webapp
-from google.appengine.api import memcache
-
-from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-class AppEngineInterpreter(code.InteractiveInterpreter):
-    """An interactive interpreter suitable for running within the App Engine."""
-    def __init__(self, *args, **kw):
-        code.InteractiveInterpreter.__init__(self, *args, **kw)
-
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
-        self.buf    = StringIO.StringIO()
-
-        self.output  = None
-
-    def getPending(self):
-        pending = memcache.get('pending')
-        if pending is None:
-            pending = ''
-        return pending
-    
-    def setPending(self, pending):
-        result = memcache.set('pending', pending)
-        if result == False:
-            raise Exception, 'Failed to set the pending value in memcache'
-
-    def runsource(self, source, *args, **kw):
-        logging.debug('self: %s' % self)
-        logging.debug('input source: %s' % source)
-
-        pending = self.getPending()
-        if pending:
-            source = pending + source
-            logging.debug('full source:\n%s' % source)
-        else:
-            logging.debug('not pending')
-
-        sys.stdout, sys.stderr = self.buf, self.buf
-        result = code.InteractiveInterpreter.runsource(self, source, *args, **kw)
-        sys.stdout, sys.stderr = self.stdout, self.stderr
-
-        if result == False:
-            self.buf.seek(0)
-            self.output = self.buf.read()
-            self.buf.truncate(0)
-
-            logging.debug('Execution completed: %s' % self.output)
-            self.setPending('')
-        else:
-            logging.debug('Code not complete, saving pending source')
-            self.setPending('%s\n' % source)
-            self.output = ''
-
-        return result
-
-class Statement(webapp.RequestHandler):
-    def __init__(self):
-        self.engine = AppEngineInterpreter(globals())
-        #self.engine = AppEngineInterpreter(locals())
-        #self.engine = AppEngineInterpreter()
-
-    def write(self, *args, **kw):
-        self.response.out.write(*args, **kw)
-
-    def get(self):
-        code = self.request.get('code')
-
-        result = self.engine.runsource(code)
-        response = {
-            'in' : code,
-            'out': self.engine.output.strip(),
-            'result': result,
-        }
-
-        self.response.headers['Content-Type'] = 'application/x-javascript'
-        self.write(simplejson.dumps(response))
-        logging.debug('sending')
-
-class Banner(webapp.RequestHandler):
-    def get(self):
-        logging.debug('Fetching banner')
-
-        copyright = 'Type "help", "copyright", "credits" or "license" for more information.'
-        banner = "Python %s on %s\n%s\n(%s)" % (sys.version, sys.platform, copyright, os.environ['SERVER_SOFTWARE'])
-
-        self.response.headers['Content-Type'] = 'application/x-javascript'
-        self.response.out.write(simplejson.dumps({'banner':banner}))
-
-class Page(webapp.RequestHandler):
-    """A human-visible "page" that presents itself to a person."""
-    templates = os.path.join(os.path.dirname(__file__), 'templates')
-
-    def __init__(self, *args, **kw):
-        webapp.RequestHandler.__init__(self, *args, **kw)
-
-        myClass = re.search(r"<class '.*\.(.*)'", str(self.__class__)).groups()[0]
-        self.page = myClass.lower()
-
-        templateFile = '%s.html' % self.page
-        self.template = os.path.join(self.templates, templateFile)
-
-        self.values = {}
-        self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
-        self.values['path']   = os.environ['PATH_INFO']
-        self.values['pages']  = [ {'name':'Console', 'href':'/'},
-                                  {'name':'Help'   , 'href':'/help'} ]
-
-    def write(self):
-        logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))
-        self.response.out.write(template.render(self.template, self.values))
-
-class Console(Page):
-    def get(self):
-        user = users.get_current_user()
-        if user:
-            self.values['user']     = user
-            self.values['email']    = user.email()
-            self.values['nickname'] = user.nickname()
-
-        self.write()
-
-class Help(Page):
-    def get(self):
-        self.write()
-
 application = webapp.WSGIApplication([
-    ('/'         , Console),
-    ('/help'     , Help),
-    ('/statement', Statement),
-    ('/banner'   , Banner),
+    ('/'         , controller.Console),
+    ('/help'     , controller.Help),
+    ('/statement', controller.Statement),
+    ('/banner'   , controller.Banner),
 ], debug=True)
 
 def main():
