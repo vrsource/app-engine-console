@@ -2339,9 +2339,11 @@ def ReadAppConfig(appinfo_path, parse_app_config=appinfo.LoadSingleAppInfo):
     URLMap instances, this function will raise an InvalidAppConfigError
     exception.
   """
+  from string import Template
   try:
-    appinfo_template = file(appinfo_path, 'r').read()
-    appinfo_config = appinfo_template % os.environ
+    appinfo_content = file(appinfo_path, 'r').read()
+    appinfo_template = Template(appinfo_content)
+    appinfo_config = appinfo_template.substitute(**os.environ)
     appinfo_file = cStringIO.StringIO(appinfo_config)
     try:
       return parse_app_config(appinfo_file)
