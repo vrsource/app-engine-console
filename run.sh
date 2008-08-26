@@ -27,6 +27,7 @@ fi
 # For Git, the software "version" will be the timestamp of the latest
 # commit to the branch in the repository.
 app_version=`git log --pretty=format:'%ct%n' HEAD^..`
+echo "app_version=$app_version"
 export app_version
 
 exec dev_appserver.py "$my_app"
