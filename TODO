@@ -12,3 +12,4 @@ Bugs
 ====
 
 * The last expression value, '_', is not set
+* Probably should send data via HTTP POST
