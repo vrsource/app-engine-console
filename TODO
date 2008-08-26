@@ -5,6 +5,8 @@ Features
 * Authentication and authorization
 * Pygments highlighting of returned code
 * Maybe pygments highlighting of sent code (by replacing it when it comes back)
+* Allow the developer to define a module with utility functions they like that
+  will load up into the current namespace
 
 Bugs
 ====
