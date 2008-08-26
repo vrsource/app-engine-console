@@ -96,7 +96,7 @@ class Page(webapp.RequestHandler):
         self.response.out.write(template.render(self.template, self.values))
 
 class Console(Page):
-    subpages = ['interactive', 'bar', 'baz']
+    subpages = ['interactive']
 
     def get(self):
         user = users.get_current_user()
