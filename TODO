@@ -11,6 +11,8 @@ Features
   to share contexts if they want
 * Probably need to implement contexts the way Google's "shell" app does since
   it looks like InteractiveInterpreter is not easily pickleable.
+* History saving across page reloads
+* See if IPython is pure-python and if so, maybe use it as the back-end
 
 Bugs
 ====
