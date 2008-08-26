@@ -75,9 +75,17 @@ class Page(webapp.RequestHandler):
 
         self.values = {}
         self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
-        self.values['path']   = os.environ['PATH_INFO']
         self.values['pages']  = [ {'name':'Console', 'href':'/'},
-                                  {'name':'Help'   , 'href':'/help'} ]
+                                  {'name':'Help'   , 'href':'/help/'} ]
+
+        path = os.environ['PATH_INFO']
+        self.values['path'] = path
+        self.values['controller'] = self.page.capitalize()
+
+        match = re.search(r'^/%s/(.+)$' % self.page, path)
+        if match:
+            # Handle a sub-path which is within the main controller path (e.g. /help/something instead of just /help).
+            self.values['subpage'] = match.groups()[0]
 
     def write(self):
         logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))

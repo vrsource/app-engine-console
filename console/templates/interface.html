@@ -54,11 +54,11 @@
 
 <div class="mainmenu">
   {%block mainmenu%}
-      {% for page in pages %}
-          {% ifequal page.href path %}
-              <a href="{{page.href}}" class="active">{{page.name}}</a>
+      {% for menupage in pages %}
+          {% ifequal controller menupage.name %}
+              <a href="{{menupage.href}}" class="active">{{menupage.name}}</a>
           {% else %}
-              <a href="{{page.href}}">{{page.name}}</a>
+              <a href="{{menupage.href}}">{{menupage.name}}</a>
           {% endifequal %}
       {% endfor %}
   {%endblock%}
