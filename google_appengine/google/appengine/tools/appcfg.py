@@ -1683,7 +1683,7 @@ class AppCfgApp(object):
     from string import Template
     appyaml_content = open(appyaml_filename, "r").read()
     appyaml_template = Template(appyaml_content)
-    appyaml_config = appyaml_template.substitute(**os.environ)
+    appyaml_config = appyaml_template.substitute(os.environ)
     fh = cStringIO.StringIO(appyaml_config)
 
     try:

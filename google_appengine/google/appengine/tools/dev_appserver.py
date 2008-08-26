@@ -2343,7 +2343,7 @@ def ReadAppConfig(appinfo_path, parse_app_config=appinfo.LoadSingleAppInfo):
   try:
     appinfo_content = file(appinfo_path, 'r').read()
     appinfo_template = Template(appinfo_content)
-    appinfo_config = appinfo_template.substitute(**os.environ)
+    appinfo_config = appinfo_template.substitute(os.environ)
     appinfo_file = cStringIO.StringIO(appinfo_config)
     try:
       return parse_app_config(appinfo_file)
