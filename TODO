@@ -13,6 +13,8 @@ Features
   it looks like InteractiveInterpreter is not easily pickleable.
 * History saving across page reloads
 * See if IPython is pure-python and if so, maybe use it as the back-end
+* Probably should be a link to the app engine dashboard, at least in
+  development mode
 
 Bugs
 ====
