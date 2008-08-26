@@ -74,6 +74,7 @@ class Page(webapp.RequestHandler):
         self.template = os.path.join(self.templates, templateFile)
 
         self.values = {}
+        self.values['subpages'] = self.subpages
         self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
         self.values['pages']  = [ {'name':'Console', 'href':'/'},
                                   {'name':'Help'   , 'href':'/help/'} ]
@@ -92,6 +93,8 @@ class Page(webapp.RequestHandler):
         self.response.out.write(template.render(self.template, self.values))
 
 class Console(Page):
+    subpages = ['foo', 'bar', 'baz']
+
     def get(self):
         user = users.get_current_user()
         if user:
@@ -102,6 +105,8 @@ class Console(Page):
         self.write()
 
 class Help(Page):
+    subpages = ['usage', 'about']
+
     def get(self):
         self.write()
 

@@ -29,6 +29,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 application = webapp.WSGIApplication([
     ('/'         , controller.Console),
+    ('/console.*', controller.Console),
     ('/help.*'   , controller.Help),
     ('/statement', controller.Statement),
     ('/banner'   , controller.Banner),
