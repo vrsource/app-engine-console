@@ -70,9 +70,6 @@ class Page(webapp.RequestHandler):
         myClass = re.search(r"<class '.*\.(.*)'", str(self.__class__)).groups()[0]
         self.page = myClass.lower()
 
-        templateFile = '%s.html' % self.page
-        self.template = os.path.join(self.templates, templateFile)
-
         self.values = {}
         self.values['subpages'] = self.subpages
         self.values['is_dev'] = os.environ['SERVER_SOFTWARE'].startswith('Dev'),
@@ -91,12 +88,15 @@ class Page(webapp.RequestHandler):
             # The default sub-page is the first one in the list.
             self.values['subpage'] = self.subpages[0]
 
+        templateFile = '%s_%s.html' % (self.page, self.values['subpage'])
+        self.template = os.path.join(self.templates, templateFile)
+
     def write(self):
         logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))
         self.response.out.write(template.render(self.template, self.values))
 
 class Console(Page):
-    subpages = ['foo', 'bar', 'baz']
+    subpages = ['interactive', 'bar', 'baz']
 
     def get(self):
         user = users.get_current_user()
