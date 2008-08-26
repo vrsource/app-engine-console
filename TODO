@@ -7,6 +7,10 @@ Features
 * Maybe pygments highlighting of sent code (by replacing it when it comes back)
 * Allow the developer to define a module with utility functions they like that
   will load up into the current namespace
+* Support a different Python context per session, with the ability for people
+  to share contexts if they want
+* Probably need to implement contexts the way Google's "shell" app does since
+  it looks like InteractiveInterpreter is not easily pickleable.
 
 Bugs
 ====
