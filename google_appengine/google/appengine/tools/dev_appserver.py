@@ -2340,7 +2340,9 @@ def ReadAppConfig(appinfo_path, parse_app_config=appinfo.LoadSingleAppInfo):
     exception.
   """
   try:
-    appinfo_file = file(appinfo_path, 'r')
+    appinfo_template = file(appinfo_path, 'r').read()
+    appinfo_config = appinfo_template % os.environ
+    appinfo_file = cStringIO.StringIO(appinfo_config)
     try:
       return parse_app_config(appinfo_file)
     finally:
