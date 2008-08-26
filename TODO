@@ -5,3 +5,8 @@ Features
 * Authentication and authorization
 * Pygments highlighting of returned code
 * Maybe pygments highlighting of sent code (by replacing it when it comes back)
+
+Bugs
+====
+
+* The last expression value, '_', is not set
