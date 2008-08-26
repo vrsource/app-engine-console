@@ -87,6 +87,9 @@ class Page(webapp.RequestHandler):
         if match:
             # Handle a sub-path which is within the main controller path (e.g. /help/something instead of just /help).
             self.values['subpage'] = match.groups()[0]
+        else:
+            # The default sub-page is the first one in the list.
+            self.values['subpage'] = self.subpages[0]
 
     def write(self):
         logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))

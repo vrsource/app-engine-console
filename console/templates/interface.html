@@ -67,7 +67,12 @@
 <div class="mainmenu2">
     {%block mainmenu2%}
         {% for sub in subpages %}
-            <a href="{{controller|lower}}/{{sub}}">{{sub|capfirst}}</a>
+            {% ifequal sub subpage %}
+                <a href="/{{controller|lower}}/{{sub}}" class="active">{{sub|capfirst}}</a>
+            {% else %}
+                <a href="/{{controller|lower}}/{{sub}}">{{sub|capfirst}}</a>
+            {% endifequal %}
+
             {% if not forloop.last %}
                 |
             {% endif %}
