@@ -30,6 +30,7 @@ files, and commit or rollback the transaction.
 
 
 import cookielib
+import cStringIO
 import datetime
 import getpass
 import logging
@@ -1680,6 +1681,10 @@ class AppCfgApp(object):
                         "configuration file.")
 
     fh = open(appyaml_filename, "r")
+    template = fh.read()
+    fh.close()
+    fh = cStringIO.StringIO(template % os.environ)
+
     try:
       appyaml = appinfo.LoadSingleAppInfo(fh)
     finally:
