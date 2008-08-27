@@ -33,7 +33,7 @@
 
 <div align="right">
     <div style="float:left; color:green; font-weight:bold">
-        {{app|capfirst}}
+        {{app|capfirst}} {{version}}
         {%if is_dev%}
             (DEVELOPMENT)
         {%endif%}
@@ -44,16 +44,23 @@
         |
     {%endif%}
 
+    <a class="novisit" href="http://appengine.google.com/dashboard?app_id={{app}}" target="_blank">Dashboard</a>
+    |
+
+    {% if is_dev %}
+        <a class="novisit" href="http://{{version}}.{{app}}.appspot.com/" target="_blank">Production</a>
+        |
+    {% endif %}
+
+    <a class="novisit" href="http://www.proven-corporation.com/contact/">Contact Me</a>
+    |
     {%if user%}
         <a class="novisit" href="{{sign_out}}">Sign out</a>
     {% else %}
         <a class="novisit" href="{{sign_in}}">Sign in</a>
     {%endif%}
-    |
-    <a class="novisit" href="http://www.proven-corporation.com/contact/">Contact Me</a>
 </div>
 
-<div class="counter">({{app}} {{version}})</div>
 <div class="mainmenu">
   {%block mainmenu%}
       {% for menupage in pages %}
