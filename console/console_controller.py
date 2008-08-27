@@ -125,6 +125,9 @@ class Console(Page):
     subpages = []
 
     def get(self):
+        self.values['settings'] = [
+            {'id':'highlight', 'options': ['Highlighting', 'No highlighting']},
+        ]
         self.write()
 
 class Help(Page):

@@ -88,6 +88,19 @@
             {% endif %}
         {% endfor %}
     {% endblock %}
+    {% block settings %}
+        {% for setting in settings %}
+            {% if forloop.first %}
+                Settings:
+            {% endif %}
+
+            <select id="setting_{{setting.id}}">
+                {% for option in setting.options %}
+                    <option value="{{option}}">{{option}}</option>
+                {% endfor %}
+            </select>
+        {% endfor %}
+    {% endblock %}
 </div>
 
 <div>
