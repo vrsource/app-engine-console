@@ -40,6 +40,11 @@ INITIAL_UNPICKLABLES = [
 ]
 
 
+def is_dev():
+    """Return whether the application environment is in development mode."""
+    return os.environ['SERVER_SOFTWARE'].startswith('Dev')
+
+
 class Statement(webapp.RequestHandler):
     def __init__(self):
         self.lexer = pygments.lexers.PythonLexer()
@@ -108,7 +113,7 @@ class Page(webapp.RequestHandler):
         self.values['app']      = self.appID
         self.values['version']  = self.appVersion
         self.values['subpages'] = self.subpages
-        self.values['is_dev']   = os.environ['SERVER_SOFTWARE'].startswith('Dev')
+        self.values['is_dev']   = is_dev()
         self.values['pages']    = [ {'name':'Console', 'href':'/console/'},
                                     {'name':'Help'   , 'href':'/console/help/'} ]
 
