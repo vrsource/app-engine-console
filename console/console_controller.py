@@ -38,6 +38,7 @@ class Statement(webapp.RequestHandler):
         #self.engine = model.AppEngineInterpreter()
 
         self.lexer = pygments.lexers.PythonLexer()
+        self.resultLexer = pygments.lexers.PythonConsoleLexer()
         self.formatter = pygments.formatters.HtmlFormatter()
 
     def write(self, *args, **kw):
@@ -48,15 +49,19 @@ class Statement(webapp.RequestHandler):
         code = self.request.get('code')
 
         result = self.engine.runsource(code)
+        output = self.engine.output.strip()
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
             code = pygments.highlight(code, self.lexer, self.formatter).strip()
 
+            if result == False:
+                output = pygments.highlight(output, self.resultLexer, self.formatter).strip()
+
         response = {
             'id' : id,
             'in' : code,
-            'out': self.engine.output.strip(),
+            'out': output,
             'result': result,
         }
 

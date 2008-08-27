@@ -321,11 +321,10 @@ InterpreterManager.prototype.showResult = function (res) {
         window._ = res;
     }
     if (typeof(res) != "undefined") {
-        appendChildNodes("interpreter_output",
-            //SPAN({"class": "data"}, repr(res)),
-            SPAN({"class": "data"}, res),
-            BR()
-        );
+        var formatted = DIV({'class':'pygments data'});
+        formatted.innerHTML = res;
+        appendChildNodes('interpreter_output', formatted);
+
         this.doScroll();
     }
 };
