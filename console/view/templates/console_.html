@@ -19,15 +19,20 @@
 {% extends "interface.html" %}
 
 {% block body %}
-    <form id="interpreter_form" autocomplete="off">
-        <div class="issue-list">
-            <div id="interpreter_area">
-                <div id="interpreter_output"></div>
+    <div id="console_interface">
+        <form id="interpreter_form" autocomplete="off">
+            <div class="issue-list">
+                <div id="interpreter_area">
+                    <div id="interpreter_output"></div>
+                </div>
             </div>
-        </div>
 
-        <div id="oneline" class="promptBox">
-            <input id="interpreter_text" name="input_text" type="text" class="textbox" />
-        </div>
-    </form>
+            <div id="oneline" class="promptBox">
+                <input id="interpreter_text" name="input_text" type="text" class="textbox" />
+            </div>
+        </form>
+    </div>
+
+    <div id="talkinator">
+    </div>
 {% endblock %}

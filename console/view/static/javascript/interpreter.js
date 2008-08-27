@@ -450,10 +450,23 @@ addLoadEvent(function () {
 InterpreterManager.prototype.setChat = function (e) {
     /* Handle the Talkinator chat settings. */
     var choice = getElement('setting_chatting').value;
+    var talkinator = getElement('talkinator');
+    var console    = getElement('console_interface');
+
     if(choice == 'Chatting') {
-        alert('should chat');
+        console.style.width = '75%';
+        talkinator.style.width = '24.5%';
+        talkinator.style.display = 'block';
+        talkinator.innerHTML =
+            '<iframe width="250" height="540" marginwidth="0" marginheight="0" scrolling="no"' +
+            '       style="border: 2px solid #93b7fa" frameborder="0"'                +
+            '       src="http://t8r4.info/$r?s=0&t=h&w=250&h=540&c=e9f2df&b=Talky"> '          +
+            '</iframe>';
     }
     else {
-        alert('should not chat');
+        talkinator.innerHTML = '';
+        talkinator.style.display = 'none';
+        talkinator.style.width = '0';
+        console.style.width = '100%';
     }
 };
