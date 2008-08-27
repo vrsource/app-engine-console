@@ -34,6 +34,21 @@ from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
 
 
+# In production mode (hosted at Google), anonymous users may not use the console.
+# But in development mode, anonymous users may.  If you still want to disallow
+# anonymous users from using the console from the development SDK, set this
+# variable to True.
+require_login_during_development = False
+
+# In production mode, only administrators may use the console. However, if you
+# really want to allow any regular logged-in user to use the console, you can
+# set this variable to True.
+allow_any_user = False
+
+#
+# No more configuration settings below here
+#
+
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
     'try: from autoexec import *\nexcept ImportError: pass',
@@ -43,6 +58,9 @@ INITIAL_UNPICKLABLES = [
 def is_dev():
     """Return whether the application environment is in development mode."""
     return os.environ['SERVER_SOFTWARE'].startswith('Dev')
+
+def is_production():
+    return (not is_dev())
 
 
 class Statement(webapp.RequestHandler):
@@ -59,9 +77,51 @@ class Statement(webapp.RequestHandler):
         code = self.request.get('code')
         session_key = self.request.get('session')
 
-        engine = model.AppEngineConsole.get(session_key)
-        result = engine.runsource(code)
-        output = engine.output.strip()
+        user = users.get_current_user()
+        result = False
+
+        # This must be boolean True for the service to work.  If it is a string, it will
+        # be used for the rejection message.
+        usage = "You can't use this service"
+
+        # Some other error messages. Yes, they are totally bogus.  But the effect is pretty sweet.
+        login_required = ('Traceback (most recent call last):\n'
+                          '  File "<string>", line 1, in <module>\n'
+                          'NotLoggedInError: Hello! Please XXX_LOGIN_LINK_XXX to use the console')
+        admin_required = ('Traceback (most recent call last):\n'
+                          '  File "<string>", line 1, in <module>\n'
+                          'NotAdminError: You must be the administrator to use this service. '
+                          'Please XXX_LOGOUT_LINK_XXX and then log in as an administrator')
+
+        if is_production():
+            if not user:
+                usage = login_required      # Must be logged in in production mode, period.
+            else:
+                if allow_any_user:
+                    usage = True            # Do what the man says.
+                else:
+                    if users.is_current_user_admin():
+                        usage = True        # Grant access to the admin.
+                    else:
+                        usage = admin_required # Administrator access required in production mode
+        else:
+            if not require_login_during_development:
+                usage = True                # Unrestricted access during development mode
+            else:
+                if user:
+                    usage = True            # Logged-in user allowed, even in development mode.
+                else:
+                    usage = login_required  # Development mode still requires logins.
+
+        if usage is True:
+            # Access granted.
+            engine = model.AppEngineConsole.get(session_key)
+            result = engine.runsource(code)
+            output = engine.output.strip()
+        else:
+            # For some reason, we can't process this request.
+            output = usage
+            result = False
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
@@ -71,6 +131,11 @@ class Statement(webapp.RequestHandler):
 
             if result == False:
                 output = pygments.highlight(output, self.resultLexer, self.formatter).strip()
+
+        if usage is not True:
+            # Replace the XXX-stuff with a real HTML link now that the HTML formatter is done.
+            output = output.replace('XXX_LOGIN_LINK_XXX', '<a href="%s">log in</a>' % users.create_login_url('/console/'))
+            output = output.replace('XXX_LOGOUT_LINK_XXX', '<a href="%s">log out</a>' % users.create_logout_url('/console/'))
 
         response = {
             'id' : id,
