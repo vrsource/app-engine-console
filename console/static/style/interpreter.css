@@ -104,7 +104,7 @@ div.code .highlight {
 .pygments .gr { color: #FF0000 } /* Generic.Error */
 .pygments .gh { color: #000080; font-weight: bold } /* Generic.Heading */
 .pygments .gi { color: #00A000 } /* Generic.Inserted */
-.pygments .go { color: #808080 } /* Generic.Output */
+.pygments .go { color: black; } /* Generic.Output */
 .pygments .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
 .pygments .gs { font-weight: bold } /* Generic.Strong */
 .pygments .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
