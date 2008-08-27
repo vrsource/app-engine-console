@@ -9,8 +9,6 @@ Features
 ========
 
 * Authentication and authorization
-* Allow the developer to define a module with utility functions they like that
-  will load up into the current namespace
 * The ability for people to share contexts if they want
 * History saving across page reloads
 * See if IPython is pure-python and if so, maybe use it as the back-end
