@@ -84,7 +84,9 @@ class Page(webapp.RequestHandler):
     """A human-visible "page" that presents itself to a person."""
     templates = os.path.join(
         os.path.dirname(
-            os.path.dirname(__file__)), 'templates')
+            os.path.dirname(__file__)),
+        'view',
+        'templates')
     appID = os.environ['APPLICATION_ID']
     appVersion = os.environ['CURRENT_VERSION_ID']
 
