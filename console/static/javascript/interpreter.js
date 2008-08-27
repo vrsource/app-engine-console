@@ -268,7 +268,7 @@ InterpreterManager.prototype.doSubmit = function () {
 
     var id = 'command_' + this.uid();
     appendChildNodes("interpreter_output",
-        DIV({'id': id, 'class': 'code'},
+        DIV({'id': id, 'class': 'code pygments'},
             SPAN({"class": "code"}, code)
         ),
         BR()
@@ -293,9 +293,10 @@ InterpreterManager.prototype.runCode = function (allCode, id) {
         var d = loadJSONDoc('/statement', {'code':allCode, 'id':id});
 
         var fetchSuccess = function(response) {
-            // TODO: confirm that the code we send is unmolested coming back
-            // from the server.
+            var oldCode = getElement(response.id);
+            oldCode.innerHTML = response.in;
             
+            jason = response;
             if(!isEmpty(response.out))
                 consoleWindow.showResult(response.out);
 

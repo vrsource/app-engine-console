@@ -21,6 +21,10 @@ import sys
 import logging
 import simplejson
 
+import pygments
+import pygments.lexers
+import pygments.formatters
+
 import console_model as model
 
 from google.appengine.api        import users
@@ -33,6 +37,9 @@ class Statement(webapp.RequestHandler):
         #self.engine = model.AppEngineInterpreter(locals())
         #self.engine = model.AppEngineInterpreter()
 
+        self.lexer = pygments.lexers.PythonLexer()
+        self.formatter = pygments.formatters.HtmlFormatter()
+
     def write(self, *args, **kw):
         self.response.out.write(*args, **kw)
 
@@ -41,6 +48,8 @@ class Statement(webapp.RequestHandler):
         code = self.request.get('code')
 
         result = self.engine.runsource(code)
+        code = pygments.highlight(code, self.lexer, self.formatter).strip()
+
         response = {
             'id' : id,
             'in' : code,

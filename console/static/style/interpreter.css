@@ -46,6 +46,17 @@ input.textbox {
     font-size: .60em;
 }
 
+#interpreter_output div.code,
+#interpreter_output div.highlight {
+    display: inline;
+}
+
+#interpreter_output div.code pre {
+    display: inline;
+    margin: 0;
+    white-space: nowrap;
+}
+
 #interpreter_output span {
     white-space: -moz-pre-wrap; /* Mozilla */
     white-space: -o-pre-wrap; /* Opera 7 */
@@ -61,11 +72,14 @@ div.promptBox {
 
 input.textbox:focus { background-color: #FFFEE3; }
 
-div.code {
+/*
+div.code,
+div.code .highlight {
     display: inline;
 }
+*/
 
-span.code { color: blue; }
+.code { color: blue; }
 .data { color: black; }
 .error { color: red; }
 .banner { color: green; }
@@ -73,7 +87,7 @@ span.code { color: blue; }
 
 /* Pygments styles for syntax hilighting */
 .pygments .hll { background-color: #ffffcc }
-.pygments { background: #f8f8f8; }
+.pygments { background: #f3f3f3; }
 .pygments .c { color: #408080; font-style: italic } /* Comment */
 .pygments .err { border: 1px solid #FF0000 } /* Error */
 .pygments .k { color: #008000; font-weight: bold } /* Keyword */
