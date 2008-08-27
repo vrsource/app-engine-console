@@ -12,5 +12,3 @@ Features
 * The ability for people to share contexts if they want
 * History saving across page reloads
 * See if IPython is pure-python and if so, maybe use it as the back-end
-* Maybe some sort of pastebin integration
-* Maybe talkinator integration

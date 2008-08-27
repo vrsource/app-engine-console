@@ -156,7 +156,7 @@ class Console(Page):
             {'id':'room'     , 'value':room              , 'type':'hidden'},
 
             {'id':'highlight', 'options': ['Highlighting', 'No highlighting']},
-            {'id':'chatting' , 'options': ['No Chatting' , 'Chatting']},
+            {'id':'teamwork' , 'options': ['Flying Solo' , 'Pastebin', 'Chatting']},
         ]
 
         self.values['channel'] = 'Talky'

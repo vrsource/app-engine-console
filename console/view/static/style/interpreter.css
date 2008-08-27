@@ -38,6 +38,11 @@ div#talkinator {
     background-color: #f3f3f3;
 }
 
+div#pastebin {
+    padding-top: 1em;
+    clear: both;
+}
+
 input.textbox {
     font-family: monospace, "lucida console", Courier;
     border: 1px solid #CCCCCC;
