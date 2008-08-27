@@ -19,9 +19,9 @@
 <head>
   <title>
     {%if is_dev%}
-      (DEV)
+      [DEV] -
     {%endif%}
-    App Engine Console
+    {{app}}
   </title>
   <link rel="icon" href="/favicon.ico" />
   <link type="text/css" rel="stylesheet" href="/static/style/console.css" />
@@ -32,11 +32,12 @@
 <body>
 
 <div align="right">
-    {%if is_dev%}
-        <div style="float:left; color:green; font-weight:bold">DEVELOPMENT SERVER</div>
-    {%else%}
-        <div style="float:left; font-weight:bold"><i>Proven</i> App Engine Console</div>
-    {%endif%}
+    <div style="float:left; color:green; font-weight:bold">
+        {{app|capfirst}}
+        {%if is_dev%}
+            (DEVELOPMENT)
+        {%endif%}
+    </div>
 
     {%if user%}
         <b>{{email}} ({{user}})</b>
