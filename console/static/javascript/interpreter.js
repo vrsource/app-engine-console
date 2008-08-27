@@ -7,6 +7,16 @@ InterpreterManager = function () {
     bindMethods(this);
 };
 
+/* Generate IDs unique for the current page load. It uses a closure to maintain state. */
+InterpreterManager.prototype.uid = (
+    function() {
+        var id = 0;
+        return function() {
+            return id++;
+        };
+    }
+)();
+
 InterpreterManager.prototype.initialize = function () {
     connect("interpreter_text", "onkeyup", this.keyUp);
     connect("interpreter_form", "onsubmit", this.submit);
