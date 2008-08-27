@@ -159,8 +159,6 @@ class Console(Page):
             {'id':'teamwork' , 'options': ['Flying Solo' , 'Pastebin', 'Chatting']},
         ]
 
-        self.values['channel'] = 'Talky'
-
         self.write()
 
 class Help(Page):
