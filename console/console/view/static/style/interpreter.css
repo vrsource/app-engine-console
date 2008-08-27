@@ -45,7 +45,7 @@ div#pastebin {
 
 input.textbox {
     font-family: monospace, "lucida console", Courier;
-    border: 1px solid #CCCCCC;
+    border: 1px solid #93b7fa;
     font-size: .60em; 
     padding: 2px 0;
     margin-top: .3em;
