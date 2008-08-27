@@ -68,19 +68,7 @@ class Statement(webapp.RequestHandler):
             code = code.strip().replace('\n', '')
 
             if result == False:
-                # Since the PythonConsole lexer does not see the input source
-                # or prompts, sometimes it fails to notice basic Python data structures like you get
-                # from dir() or sys.path or whatever.  The solution is kind of weird.  We run the
-                # output through both lexers and assume that whichever has more HTML tags has better
-                # markup.
-                cons = pygments.highlight(output, self.resultLexer, self.formatter).strip()
-                pyth = pygments.highlight(output, self.lexer, self.formatter).strip()
-                if pyth.count('<') + pyth.count('>') > cons.count('<') + cons.count('>'):
-                    logging.debug('Going with Python lexer for output')
-                    output = pyth
-                else:
-                    logging.debug('Going with PythonConsole lexer for output')
-                    output = cons
+                output = pygments.highlight(output, self.resultLexer, self.formatter).strip()
 
         response = {
             'id' : id,
