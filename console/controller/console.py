@@ -36,12 +36,9 @@ from google.appengine.ext.webapp import template
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
     'import logging',
-    'import os',
-    'import sys',
     'from google.appengine.ext import db',
     'from google.appengine.api import users',
 ]
-INITIAL_UNPICKLABLES = []
 
 
 class Statement(webapp.RequestHandler):
