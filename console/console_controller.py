@@ -123,12 +123,6 @@ class Console(Page):
     subpages = ['interactive']
 
     def get(self):
-        user = users.get_current_user()
-        if user:
-            self.values['user']     = user
-            self.values['email']    = user.email()
-            self.values['nickname'] = user.nickname()
-
         self.write()
 
 class Help(Page):
