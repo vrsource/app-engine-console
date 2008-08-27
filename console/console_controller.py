@@ -48,7 +48,10 @@ class Statement(webapp.RequestHandler):
         code = self.request.get('code')
 
         result = self.engine.runsource(code)
-        code = pygments.highlight(code, self.lexer, self.formatter).strip()
+
+        highlighting = (self.request.get('highlight') != '0')
+        if highlighting:
+            code = pygments.highlight(code, self.lexer, self.formatter).strip()
 
         response = {
             'id' : id,
