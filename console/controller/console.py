@@ -36,9 +36,6 @@ from google.appengine.ext.webapp import template
 
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
-    'import logging',
-    'from google.appengine.ext import db',
-    'from google.appengine.api import users',
     'try: from autoexec import *\nexcept ImportError: pass',
 ]
 
