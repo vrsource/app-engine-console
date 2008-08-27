@@ -18,9 +18,9 @@
 {# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA  #}
 <head>
   <title>
-    {%if is_dev%}
+    {% if is_dev %}
       [DEV] -
-    {%endif%}
+    {% endif %}
     {{app}}
   </title>
   <link rel="icon" href="/favicon.ico" />
@@ -34,15 +34,15 @@
 <div align="right">
     <div style="float:left; color:green; font-weight:bold">
         {{app|capfirst}} {{version}}
-        {%if is_dev%}
+        {% if is_dev %}
             (DEVELOPMENT)
-        {%endif%}
+        {% endif %}
     </div>
 
-    {%if user%}
+    {% if user %}
         <b>{{email}} ({{user}})</b>
         |
-    {%endif%}
+    {% endif %}
 
     {% if is_dev %}
         <a class="novisit" target="_blank" href="/_ah/admin">Admin</a>
@@ -55,15 +55,15 @@
     |
     <a class="novisit" href="http://www.proven-corporation.com/contact/">Contact Me</a>
     |
-    {%if user%}
+    {% if user %}
         <a class="novisit" href="{{sign_out}}">Sign out</a>
     {% else %}
         <a class="novisit" href="{{sign_in}}">Sign in</a>
-    {%endif%}
+    {% endif %}
 </div>
 
 <div class="mainmenu">
-  {%block mainmenu%}
+  {% block mainmenu %}
       {% for menupage in pages %}
           {% ifequal controller menupage.name %}
               <a href="{{menupage.href}}" class="active">{{menupage.name}}</a>
@@ -71,11 +71,11 @@
               <a href="{{menupage.href}}">{{menupage.name}}</a>
           {% endifequal %}
       {% endfor %}
-  {%endblock%}
+  {% endblock %}
 </div>
 
 <div class="mainmenu2">
-    {%block mainmenu2%}
+    {% block mainmenu2 %}
         {% for sub in subpages %}
             {% ifequal sub subpage %}
                 <a href="/{{controller|lower}}/{{sub}}" class="active">{{sub|capfirst}}</a>
@@ -87,7 +87,7 @@
                 |
             {% endif %}
         {% endfor %}
-    {%endblock%}
+    {% endblock %}
 </div>
 
 <div>
@@ -100,7 +100,7 @@
 {% endblock %}
 
 <div class="extra" style="font-size: 9pt; float: right;">
-  {%include "console_revision.html"%}
+  {% include "console_revision.html" %}
 </div>
 
 </body>
