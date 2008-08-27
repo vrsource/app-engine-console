@@ -49,6 +49,7 @@ input.textbox {
 #interpreter_output div.code,
 #interpreter_output div.highlight {
     display: inline;
+    white-space: pre;
 }
 
 #interpreter_output div.code pre {

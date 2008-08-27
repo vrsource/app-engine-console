@@ -290,7 +290,11 @@ InterpreterManager.prototype.runCode = function (allCode, id) {
     var consoleWindow = this;
 
     try {
-        var d = loadJSONDoc('/statement', {'code':allCode, 'id':id});
+        var highlight = 1;
+        if(getElement('setting_highlight').value != 'Highlighting')
+            highlight = 0;
+
+        var d = loadJSONDoc('/statement', {'code':allCode, 'id':id, 'highlight':highlight});
 
         var fetchSuccess = function(response) {
             var oldCode = getElement(response.id);
@@ -321,9 +325,17 @@ InterpreterManager.prototype.showResult = function (res) {
         window._ = res;
     }
     if (typeof(res) != "undefined") {
-        var formatted = DIV({'class':'pygments data'});
-        formatted.innerHTML = res;
-        appendChildNodes('interpreter_output', formatted);
+        if(getElement('setting_highlight').value == 'Highlighting') {
+            var formatted = DIV({'class':'pygments data'});
+            formatted.innerHTML = res;
+            appendChildNodes('interpreter_output', formatted);
+        }
+        else {
+            appendChildNodes("interpreter_output",
+                SPAN({"class": "data"}, res),
+                BR()
+            );
+        }
 
         this.doScroll();
     }
