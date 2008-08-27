@@ -454,13 +454,15 @@ InterpreterManager.prototype.setChat = function (e) {
     var console    = getElement('console_interface');
 
     if(choice == 'Chatting') {
+        var room = getElement('setting_room').value;
+
         console.style.width = '75%';
         talkinator.style.width = '24.5%';
         talkinator.style.display = 'block';
         talkinator.innerHTML =
             '<iframe width="250" height="540" marginwidth="0" marginheight="0" scrolling="no"' +
-            '       style="border: 2px solid #93b7fa" frameborder="0"'                +
-            '       src="http://t8r4.info/$r?s=0&t=h&w=250&h=540&c=e9f2df&b=Talky"> '          +
+            '       style="border: 2px solid #93b7fa" frameborder="0"'                         +
+            '       src="http://t8r4.info/$r?s=0&t=h&w=250&h=540&c=e9f2df&b=' + room + '"> '   +
             '</iframe>';
     }
     else {

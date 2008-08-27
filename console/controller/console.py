@@ -150,7 +150,9 @@ class Console(Page):
 
         self.values['session']  = str(session_key)
         self.values['settings'] = [
-            {'id':'session'  , 'value':session_key, 'type':'hidden'},
+            {'id':'session'  , 'value':session_key         , 'type':'hidden'},
+            {'id':'room'     , 'value':'aec%s' % self.appID, 'type':'hidden'},
+
             {'id':'highlight', 'options': ['Highlighting', 'No highlighting']},
             {'id':'chatting' , 'options': ['No Chatting' , 'Chatting']},
         ]
