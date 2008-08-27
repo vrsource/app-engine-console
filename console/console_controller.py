@@ -109,8 +109,10 @@ class Page(webapp.RequestHandler):
             # Handle a sub-path which is within the main controller path (e.g. /help/something instead of just /help).
             self.values['subpage'] = match.groups()[0]
         else:
-            # The default sub-page is the first one in the list.
-            self.values['subpage'] = self.subpages[0]
+            self.values['subpage'] = ''
+            if self.subpages:
+                # The default sub-page is the first one in the list.
+                self.values['subpage'] = self.subpages[0]
 
         templateFile = '%s_%s.html' % (self.page, self.values['subpage'])
         self.template = os.path.join(self.templates, templateFile)
@@ -120,7 +122,7 @@ class Page(webapp.RequestHandler):
         self.response.out.write(template.render(self.template, self.values))
 
 class Console(Page):
-    subpages = ['interactive']
+    subpages = []
 
     def get(self):
         self.write()
