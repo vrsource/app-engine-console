@@ -18,3 +18,4 @@
 """App Engine Console controller package"""
 
 from console import *
+from session import *

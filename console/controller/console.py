@@ -28,8 +28,20 @@ import pygments.formatters
 import model
 
 from google.appengine.api        import users
+from google.appengine.ext        import db
 from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
+
+
+# Unpicklable statements to seed new sessions with.
+INITIAL_UNPICKLABLES = [
+    'import logging',
+    'import os',
+    'import sys',
+    'from google.appengine.ext import db',
+    'from google.appengine.api import users',
+]
+
 
 class Statement(webapp.RequestHandler):
     def __init__(self):
@@ -125,13 +137,26 @@ class Page(webapp.RequestHandler):
         logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))
         self.response.out.write(template.render(self.template, self.values))
 
+
 class Console(Page):
     subpages = []
 
     def get(self):
+        # Set up the session. TODO: garbage collect old shell sessions
+        session_key = self.request.get('session')
+        if session_key:
+            session = model.ConsoleSession.get(session_key)
+        else:
+            # Create a new session.
+            session = model.ConsoleSession()
+            session.unpicklables = [db.Text(line) for line in INITIAL_UNPICKLABLES]
+            session_key = session.put()
+
+        self.values['session']  = str(session_key)
         self.values['settings'] = [
             {'id':'highlight', 'options': ['Highlighting', 'No highlighting']},
         ]
+
         self.write()
 
 class Help(Page):

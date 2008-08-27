@@ -35,24 +35,6 @@ from google.appengine.ext import db
 # The entity kind for shell sessions. Feel free to rename to suit your app.
 _SESSION_KIND = '_Console_Session'
 
-# Types that can't be pickled.
-UNPICKLABLE_TYPES = (
-    types.ModuleType,
-    types.TypeType,
-    types.ClassType,
-    types.FunctionType,
-)
-
-# Unpicklable statements to seed new sessions with.
-INITIAL_UNPICKLABLES = [
-    'import logging',
-    'import os',
-    'import sys',
-    'from google.appengine.ext import db',
-    'from google.appengine.api import users',
-]
-
-
 class ConsoleSession(db.Model):
   """A shell session. Stores the session's globals.
 

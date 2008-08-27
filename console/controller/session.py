@@ -1,5 +1,5 @@
-#!/usr/bin/python
-#
+# Based on the Google App Engine Samples project.
+
 # Copyright 2007 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +15,7 @@
 # limitations under the License.
 
 """
-An interactive, stateful AJAX shell that runs Python code on the server.
-
-Part of http://code.google.com/p/google-app-engine-samples/.
-
-May be run as a standalone app or in an existing app as an admin-only handler.
-Can be used for system administration tasks, as an interactive way to try out
-APIs, or as a debugging aid during development.
+An interactive Python console "session".
 
 The logging, os, sys, db, and users modules are imported automatically.
 
@@ -29,171 +23,29 @@ Interpreter state is stored in the datastore so that variables, function
 definitions, and other values in the global and local namespaces can be used
 across commands.
 
-To use the shell in your app, copy shell.py, static/*, and templates/* into
-your app's source directory. Then, copy the URL handlers from app.yaml into
-your app.yaml.
-
 TODO: unit tests!
 """
 
 import logging
 import new
 import os
-import pickle
 import sys
 import traceback
 import types
-import wsgiref.handlers
 
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 
-
-# Set to True if stack traces should be shown in the browser, etc.
-_DEBUG = True
-
-# The entity kind for shell sessions. Feel free to rename to suit your app.
-_SESSION_KIND = '_Shell_Session'
+import model
 
 # Types that can't be pickled.
 UNPICKLABLE_TYPES = (
-  types.ModuleType,
-  types.TypeType,
-  types.ClassType,
-  types.FunctionType,
-  )
-
-# Unpicklable statements to seed new sessions with.
-INITIAL_UNPICKLABLES = [
-  'import logging',
-  'import os',
-  'import sys',
-  'from google.appengine.ext import db',
-  'from google.appengine.api import users',
-  ]
-
-
-class Session(db.Model):
-  """A shell session. Stores the session's globals.
-
-  Each session globals is stored in one of two places:
-
-  If the global is picklable, it's stored in the parallel globals and
-  global_names list properties. (They're parallel lists to work around the
-  unfortunate fact that the datastore can't store dictionaries natively.)
-
-  If the global is not picklable (e.g. modules, classes, and functions), or if
-  it was created by the same statement that created an unpicklable global,
-  it's not stored directly. Instead, the statement is stored in the
-  unpicklables list property. On each request, before executing the current
-  statement, the unpicklable statements are evaluated to recreate the
-  unpicklable globals.
-
-  The unpicklable_names property stores all of the names of globals that were
-  added by unpicklable statements. When we pickle and store the globals after
-  executing a statement, we skip the ones in unpicklable_names.
-
-  Using Text instead of string is an optimization. We don't query on any of
-  these properties, so they don't need to be indexed.
-  """
-  global_names = db.ListProperty(db.Text)
-  globals = db.ListProperty(db.Blob)
-  unpicklable_names = db.ListProperty(db.Text)
-  unpicklables = db.ListProperty(db.Text)
-
-  def set_global(self, name, value):
-    """Adds a global, or updates it if it already exists.
-
-    Also removes the global from the list of unpicklable names.
-
-    Args:
-      name: the name of the global to remove
-      value: any picklable value
-    """
-    blob = db.Blob(pickle.dumps(value))
-
-    if name in self.global_names:
-      index = self.global_names.index(name)
-      self.globals[index] = blob
-    else:
-      self.global_names.append(db.Text(name))
-      self.globals.append(blob)
-
-    self.remove_unpicklable_name(name)
-
-  def remove_global(self, name):
-    """Removes a global, if it exists.
-
-    Args:
-      name: string, the name of the global to remove
-    """
-    if name in self.global_names:
-      index = self.global_names.index(name)
-      del self.global_names[index]
-      del self.globals[index]
-
-  def globals_dict(self):
-    """Returns a dictionary view of the globals.
-    """
-    return dict((name, pickle.loads(val))
-                for name, val in zip(self.global_names, self.globals))
-
-  def add_unpicklable(self, statement, names):
-    """Adds a statement and list of names to the unpicklables.
-
-    Also removes the names from the globals.
-
-    Args:
-      statement: string, the statement that created new unpicklable global(s).
-      names: list of strings; the names of the globals created by the statement.
-    """
-    self.unpicklables.append(db.Text(statement))
-
-    for name in names:
-      self.remove_global(name)
-      if name not in self.unpicklable_names:
-        self.unpicklable_names.append(db.Text(name))
-
-  def remove_unpicklable_name(self, name):
-    """Removes a name from the list of unpicklable names, if it exists.
-
-    Args:
-      name: string, the name of the unpicklable global to remove
-    """
-    if name in self.unpicklable_names:
-      self.unpicklable_names.remove(name)
-
-
-class FrontPageHandler(webapp.RequestHandler):
-  """Creates a new session and renders the shell.html template.
-  """
-
-  def get(self):
-    # set up the session. TODO: garbage collect old shell sessions
-    session_key = self.request.get('session')
-    if session_key:
-      session = Session.get(session_key)
-    else:
-      # create a new session
-      session = Session()
-      session.unpicklables = [db.Text(line) for line in INITIAL_UNPICKLABLES]
-      session_key = session.put()
-
-    template_file = os.path.join(os.path.dirname(__file__), 'templates',
-                                 'shell.html')
-    session_url = '/?session=%s' % session_key
-    vars = { 'server_software': os.environ['SERVER_SOFTWARE'],
-             'python_version': sys.version,
-             'session': str(session_key),
-             'user': users.get_current_user(),
-             'login_url': users.create_login_url(session_url),
-             'logout_url': users.create_logout_url(session_url),
-             }
-    rendered = webapp.template.render(template_file, vars, debug=_DEBUG)
-    self.response.out.write(rendered)
-
+    types.ModuleType,
+    types.TypeType,
+    types.ClassType,
+    types.FunctionType,
+)
 
 class StatementHandler(webapp.RequestHandler):
   """Evaluates a python statement in a given session and returns the result.
@@ -231,7 +83,7 @@ class StatementHandler(webapp.RequestHandler):
     statement_module.__builtins__ = __builtin__
 
     # load the session from the datastore
-    session = Session.get(self.request.get('session'))
+    session = model.ConsoleSession.get(self.request.get('session'))
 
     # swap in our custom module for __main__. then unpickle the session
     # globals, run the statement, and re-pickle the session globals, all
@@ -296,13 +148,10 @@ class StatementHandler(webapp.RequestHandler):
 
     session.put()
 
+__all__ = ['StatementHandler']
 
 def main():
-  application = webapp.WSGIApplication(
-    [('/', FrontPageHandler),
-     ('/shell.do', StatementHandler)], debug=_DEBUG)
-  wsgiref.handlers.CGIHandler().run(application)
-
+    logging.error("I should be running unit tests!")
 
 if __name__ == '__main__':
-  main()
+    main()
