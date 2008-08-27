@@ -4,6 +4,10 @@ Bugs
 * Deleting an unpicklable from the session does not work
 * Probably should send data via HTTP POST
 * Refactor out all the unused code from the Javascript
+* Put stuff in the Help and About page
+  * What all the settings do
+  * Where to find the code
+  * How to integrate it in your own app, maybe with some kind of walkthrough
 
 Features
 ========
