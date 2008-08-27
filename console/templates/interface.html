@@ -44,14 +44,15 @@
         |
     {%endif%}
 
-    <a class="novisit" href="http://appengine.google.com/dashboard?app_id={{app}}" target="_blank">Dashboard</a>
-    |
-
     {% if is_dev %}
+        <a class="novisit" target="_blank" href="/_ah/admin">Admin</a>
+        |
         <a class="novisit" href="http://{{version}}.{{app}}.appspot.com/" target="_blank">Production</a>
         |
     {% endif %}
 
+    <a class="novisit" href="http://appengine.google.com/dashboard?app_id={{app}}" target="_blank">Dashboard</a>
+    |
     <a class="novisit" href="http://www.proven-corporation.com/contact/">Contact Me</a>
     |
     {%if user%}
