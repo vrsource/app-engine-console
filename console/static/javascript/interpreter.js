@@ -300,7 +300,6 @@ InterpreterManager.prototype.runCode = function (allCode, id) {
             var oldCode = getElement(response.id);
             oldCode.innerHTML = response.in;
             
-            jason = response;
             if(!isEmpty(response.out))
                 consoleWindow.showResult(response.out);
 
