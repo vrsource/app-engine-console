@@ -109,17 +109,21 @@ class Page(webapp.RequestHandler):
         myClass = re.search(r"<class '.*\.(.*)'", str(self.__class__)).groups()[0]
         self.page = myClass.lower()
 
+        path = os.environ['PATH_INFO']
+
         self.values = {}
-        self.values['app']      = self.appID
-        self.values['version']  = self.appVersion
-        self.values['subpages'] = self.subpages
-        self.values['is_dev']   = is_dev()
+        self.values['app']        = self.appID
+        self.values['path']       = path
+        self.values['is_dev']     = is_dev()
+        self.values['log_in']     = users.create_login_url(path)
+        self.values['log_out']    = users.create_logout_url(path)
+        self.values['version']    = self.appVersion
+        self.values['subpages']   = self.subpages
+        self.values['controller'] = self.page.capitalize()
+
         self.values['pages']    = [ {'name':'Console', 'href':'/console/'},
                                     {'name':'Help'   , 'href':'/console/help/'} ]
 
-        path = os.environ['PATH_INFO']
-        self.values['path'] = path
-        self.values['controller'] = self.page.capitalize()
 
         match = re.search(r'^/console/%s/(.+)$' % self.page, path)
         if match:
