@@ -282,15 +282,15 @@ InterpreterManager.prototype.doSubmit = function () {
     }
     var allCode = this.lines.join("\n");
     this.lines = [];
-    this.runCode(allCode);
+    this.runCode(allCode, id);
     return;
 };
 
-InterpreterManager.prototype.runCode = function (allCode) {
+InterpreterManager.prototype.runCode = function (allCode, id) {
     var consoleWindow = this;
 
     try {
-        var d = loadJSONDoc('/statement', {'code':allCode});
+        var d = loadJSONDoc('/statement', {'code':allCode, 'id':id});
 
         var fetchSuccess = function(response) {
             // TODO: confirm that the code we send is unmolested coming back

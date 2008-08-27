@@ -37,10 +37,12 @@ class Statement(webapp.RequestHandler):
         self.response.out.write(*args, **kw)
 
     def get(self):
+        id   = self.request.get('id')
         code = self.request.get('code')
 
         result = self.engine.runsource(code)
         response = {
+            'id' : id,
             'in' : code,
             'out': self.engine.output.strip(),
             'result': result,
