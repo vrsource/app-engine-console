@@ -54,7 +54,6 @@ input.textbox {
 #interpreter_output div.code pre {
     display: inline;
     margin: 0;
-    white-space: nowrap;
 }
 
 #interpreter_output div.data pre {

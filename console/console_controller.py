@@ -53,7 +53,8 @@ class Statement(webapp.RequestHandler):
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
-            code = pygments.highlight(code, self.lexer, self.formatter).strip()
+            code = pygments.highlight(code, self.lexer, self.formatter)
+            code = code.strip().replace('\n', '')
 
             if result == False:
                 output = pygments.highlight(output, self.resultLexer, self.formatter).strip()
