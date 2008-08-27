@@ -152,7 +152,10 @@ class Console(Page):
         self.values['settings'] = [
             {'id':'session'  , 'value':session_key, 'type':'hidden'},
             {'id':'highlight', 'options': ['Highlighting', 'No highlighting']},
+            {'id':'chatting' , 'options': ['No Chatting' , 'Chatting']},
         ]
+
+        self.values['channel'] = 'Talky'
 
         self.write()
 

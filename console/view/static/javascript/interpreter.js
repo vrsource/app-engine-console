@@ -18,9 +18,14 @@ InterpreterManager.prototype.uid = (
 )();
 
 InterpreterManager.prototype.initialize = function () {
-    connect("interpreter_text", "onkeyup", this.keyUp);
-    connect("interpreter_form", "onsubmit", this.submit);
-    getElement("interpreter_text").focus();
+    if(getElement('interpreter_text') != null)
+        connect("interpreter_text", "onkeyup", this.keyUp);
+    if(getElement('interpreter_form') != null)
+        connect("interpreter_form", "onsubmit", this.submit);
+
+    var interpreter = getElement("interpreter_text");
+    if(interpreter != null)
+        interpreter.focus();
 
     this.banner();
     this.lines = [];
@@ -40,6 +45,13 @@ InterpreterManager.prototype.initialize = function () {
 
     window.help = this.help;
     this.help.NAME = 'type help(func) for help on a MochiKit function';
+
+    if(getElement('setting_chatting') != null) {
+        connect('setting_chatting', 'onchange', this.setChat);
+
+        // Also, get the current setting as some browsers cache the choice through a reload.
+        this.setChat();
+    }
 };
 
 InterpreterManager.prototype.banner = function () {
@@ -434,3 +446,14 @@ addLoadEvent(function () {
         elem.href = "../view-source/view-source.html#" + page + href;
     }
 });
+
+InterpreterManager.prototype.setChat = function (e) {
+    /* Handle the Talkinator chat settings. */
+    var choice = getElement('setting_chatting').value;
+    if(choice == 'Chatting') {
+        alert('should chat');
+    }
+    else {
+        alert('should not chat');
+    }
+};
