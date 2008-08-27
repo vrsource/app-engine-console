@@ -22,6 +22,10 @@ import cgi
 import code
 import logging
 
+from os.path import join, dirname
+sys.path.insert(0, join(dirname(__file__), 'lib'))
+
+import logging
 from controller import console as controller
 
 from google.appengine.ext import webapp
