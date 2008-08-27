@@ -35,7 +35,7 @@ from google.appengine.ext import db
 # The entity kind for shell sessions. Feel free to rename to suit your app.
 _SESSION_KIND = '_Console_Session'
 
-class ConsoleSession(db.Model):
+class ShellSession(db.Model):
   """A shell session. Stores the session's globals.
 
   Each session globals is stored in one of two places:

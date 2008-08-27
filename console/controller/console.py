@@ -41,14 +41,11 @@ INITIAL_UNPICKLABLES = [
     'from google.appengine.ext import db',
     'from google.appengine.api import users',
 ]
+INITIAL_UNPICKLABLES = []
 
 
 class Statement(webapp.RequestHandler):
     def __init__(self):
-        self.engine = model.AppEngineInterpreter(globals())
-        #self.engine = model.AppEngineInterpreter(locals())
-        #self.engine = model.AppEngineInterpreter()
-
         self.lexer = pygments.lexers.PythonLexer()
         self.resultLexer = pygments.lexers.PythonConsoleLexer()
         self.formatter = pygments.formatters.HtmlFormatter()
@@ -59,12 +56,15 @@ class Statement(webapp.RequestHandler):
     def get(self):
         id   = self.request.get('id')
         code = self.request.get('code')
+        session_key = self.request.get('session')
 
-        result = self.engine.runsource(code)
-        output = self.engine.output.strip()
+        engine = model.AppEngineConsole.get(session_key)
+        result = engine.runsource(code)
+        output = engine.output.strip()
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
+            logging.debug('Highlighting code')
             code = pygments.highlight(code, self.lexer, self.formatter)
             code = code.strip().replace('\n', '')
 
@@ -145,15 +145,16 @@ class Console(Page):
         # Set up the session. TODO: garbage collect old shell sessions
         session_key = self.request.get('session')
         if session_key:
-            session = model.ConsoleSession.get(session_key)
+            session = model.AppEngineConsole.get(session_key)
         else:
             # Create a new session.
-            session = model.ConsoleSession()
+            session = model.AppEngineConsole()
             session.unpicklables = [db.Text(line) for line in INITIAL_UNPICKLABLES]
             session_key = session.put()
 
         self.values['session']  = str(session_key)
         self.values['settings'] = [
+            {'id':'session'  , 'value':session_key, 'type':'hidden'},
             {'id':'highlight', 'options': ['Highlighting', 'No highlighting']},
         ]
 

@@ -294,7 +294,14 @@ InterpreterManager.prototype.runCode = function (allCode, id) {
         if(getElement('setting_highlight').value != 'Highlighting')
             highlight = 0;
 
-        var d = loadJSONDoc('/statement', {'code':allCode, 'id':id, 'highlight':highlight});
+        var values = {
+            'id'       : id,
+            'session'  : getElement('setting_session').value,
+            'highlight': highlight,
+            'code'     : allCode
+        };
+
+        var d = loadJSONDoc('/statement', values);
 
         var fetchSuccess = function(response) {
             var oldCode = getElement(response.id);

@@ -88,17 +88,22 @@
             {% endif %}
         {% endfor %}
     {% endblock %}
+
     {% block settings %}
         {% for setting in settings %}
             {% if forloop.first %}
                 Settings:
             {% endif %}
 
-            <select id="setting_{{setting.id}}">
-                {% for option in setting.options %}
-                    <option value="{{option}}">{{option}}</option>
-                {% endfor %}
-            </select>
+            {% ifequal setting.type 'hidden' %}
+                <input type="hidden" id="setting_{{setting.id}}" value="{{setting.value}}" />
+            {% else %}
+                <select id="setting_{{setting.id}}">
+                    {% for option in setting.options %}
+                        <option value="{{option}}">{{option}}</option>
+                    {% endfor %}
+                </select>
+            {% endifequal %}
         {% endfor %}
     {% endblock %}
 </div>

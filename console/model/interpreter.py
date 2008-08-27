@@ -16,66 +16,145 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import sys
+import new
 import code
+import types
 import logging
 import StringIO
+import traceback
 
-from google.appengine.api import memcache
+from model.session import ShellSession
 
-# For some reason, sys.modules wants __builtin__ or else the InteractiveInterpreter
-# will throw exceptions when evaluating expressions.
-import __builtin__
+from google.appengine.ext import db
 
-class AppEngineInterpreter(code.InteractiveInterpreter):
-    """An interactive interpreter suitable for running within the App Engine."""
+
+# Types that can't be pickled.
+UNPICKLABLE_TYPES = (
+    types.ModuleType,
+    types.TypeType,
+    types.ClassType,
+    types.FunctionType,
+)
+
+
+class AppEngineConsole(ShellSession):
+    """An interactive console session, derived from the Google shell session example."""
+    pending_source = db.TextProperty()
+
     def __init__(self, *args, **kw):
-        code.InteractiveInterpreter.__init__(self, *args, **kw)
-
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
-        self.buf    = StringIO.StringIO()
-
-        self.output  = None
+        ShellSession.__init__(self, *args, **kw)
+        self.output = None
 
     def getPending(self):
-        pending = memcache.get('pending')
-        if pending is None:
-            pending = ''
-        return pending
+        if self.pending_source is None:
+            return ''
+        return self.pending_source
     
     def setPending(self, pending):
-        result = memcache.set('pending', pending)
-        if result == False:
-            raise Exception, 'Failed to set the pending value in memcache'
+        self.pending_source = pending
+        self.put()
 
-    def runsource(self, source, *args, **kw):
-        logging.debug('self: %s' % self)
+    def runsource(self, source):
+        """Runs some source code in the object's context.  The return value will be
+        True if the code is valid but incomplete, or False if the code is
+        complete (whether by error or not).  If the code is complete, the
+        "output" attribute will have the text output of execution (stdout and stderr).
+        """
+
         logging.debug('input source: %s' % source)
+        source = self.getPending() + source
+        logging.info('Compiling:\n%s|<--EOF' % source)
 
-        pending = self.getPending()
-        if pending:
-            source = pending + source
-            logging.debug('full source:\n%s' % source)
-        else:
-            logging.debug('not pending')
+        try:
+            bytecode = code.compile_command(source, '<string>', 'single')
+        except:
+            self.output = traceback.format_exc()
+            return False    # Code execution completed (the hard way).
 
-        sys.stdout, sys.stderr = self.buf, self.buf
-        result = code.InteractiveInterpreter.runsource(self, source, *args, **kw)
-        sys.stdout, sys.stderr = self.stdout, self.stderr
-
-        if result == False:
-            self.buf.seek(0)
-            self.output = self.buf.read()
-            self.buf.truncate(0)
-
-            logging.debug('Execution completed: %s' % self.output)
-            self.setPending('')
-        else:
-            logging.debug('Code not complete, saving pending source')
+        if bytecode is None:
+            logging.debug('Code not complete; saving pending source')
             self.setPending('%s\n' % source)
             self.output = ''
+            return True     # Compilation still pending; awaiting lines of code.
 
-        return result
+        logging.debug('Compilation successful')
+
+        # Create a dedicated module to be used as this statement's __main__.
+        statement_module = new.module('__main__')
+
+        # Use this request's __builtin__, since it changes on each request.
+        # This is needed for import statements, among other things.
+        import __builtin__
+        statement_module.__builtins__ = __builtin__
+
+        # Swap in our custom module for __main__, then unpickle the session
+        # globals, run the statement, and re-pickle the session globals, all
+        # inside it.
+        old_main = sys.modules.get('__main__')
+        try:
+            sys.modules['__main__'] = statement_module
+            statement_module.__name__ = '__main__'
+
+            # Re-evaluate the unpicklables.
+            for bad_statement in self.unpicklables:
+                exec bad_statement in statement_module.__dict__
+
+            # Re-initialize the globals.
+            for name, val in self.globals_dict().items():
+                try:
+                    statement_module.__dict__[name] = val
+                except:
+                    msg = 'Dropping %s since it could not be unpickled' % name
+                    self.output += '%s\n' % msg
+                    logging.warning('%s:\n%s' % (msg, traceback.format_exc()))
+                    self.remove_global(name)
+
+            # Execute it.
+            buf = StringIO.StringIO()
+            old_globals = dict(statement_module.__dict__)
+            try:
+                old_stdout = sys.stdout
+                old_stderr = sys.stderr
+                try:
+                    sys.stdout = buf
+                    sys.stderr = buf
+                    exec bytecode in statement_module.__dict__
+                finally:
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
+            except:
+                # Show the user's exception.
+                self.output = traceback.format_exc()
+                return False    # Code execution completed (the hard way).
+
+            buf.seek(0)
+            self.output = buf.read()
+            logging.debug('Execution result:\n%s' % self.output)
+            self.setPending('')
+
+            # Extract the new globals that this statement added.
+            new_globals = {}
+            for name, val in statement_module.__dict__.items():
+                if name not in old_globals or val != old_globals[name]:
+                    new_globals[name] = val
+
+            if True in [isinstance(val, UNPICKLABLE_TYPES) for val in new_globals.values()]:
+                # This statement added an unpicklable global.  Store the statement and
+                # the names of all of the globals it added in the unpicklables.
+                self.add_unpicklable(source, new_globals.keys())
+                logging.info('Storing this statement as an unpicklable.')
+            else:
+                # This statement didn't add any unpicklables.  Pickle and store the
+                # new globals back into the datastore.
+                for name, val in new_globals.items():
+                    if not name.startswith('__'):
+                        self.set_global(name, val)
+        finally:
+            sys.modules['__main__'] = old_main
+
+        self.put()
+
+        return False    # Code execution completed.
 
 if __name__ == "__main__":
     logging.error('I should be running unit tests')
