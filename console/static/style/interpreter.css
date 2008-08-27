@@ -61,7 +61,11 @@ div.promptBox {
 
 input.textbox:focus { background-color: #FFFEE3; }
 
-.code { color: blue; }
+div.code {
+    display: inline;
+}
+
+span.code { color: blue; }
 .data { color: black; }
 .error { color: red; }
 .banner { color: green; }

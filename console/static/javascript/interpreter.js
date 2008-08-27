@@ -265,8 +265,12 @@ InterpreterManager.prototype.doSubmit = function () {
         isContinuation = true;
         code = code.substr(0, code.length - 2);
     }
+
+    var id = 'command_' + this.uid();
     appendChildNodes("interpreter_output",
-        SPAN({"class": "code"}, code),
+        DIV({'id': id, 'class': 'code'},
+            SPAN({"class": "code"}, code)
+        ),
         BR()
     );
     this.lines.push(code);
