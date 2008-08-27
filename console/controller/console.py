@@ -15,6 +15,8 @@
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+from __future__ import absolute_import
+
 import os
 import re
 import sys
@@ -25,7 +27,7 @@ import pygments
 import pygments.lexers
 import pygments.formatters
 
-import console_model as model
+import model
 
 from google.appengine.api        import users
 from google.appengine.ext        import webapp
@@ -82,7 +84,9 @@ class Banner(webapp.RequestHandler):
 
 class Page(webapp.RequestHandler):
     """A human-visible "page" that presents itself to a person."""
-    templates = os.path.join(os.path.dirname(__file__), 'templates')
+    templates = os.path.join(
+        os.path.dirname(
+            os.path.dirname(__file__)), 'templates')
     appID = os.environ['APPLICATION_ID']
     appVersion = os.environ['CURRENT_VERSION_ID']
 

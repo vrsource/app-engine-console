@@ -1,4 +1,4 @@
-# The WSGI entry-point for App Engine Console
+# The App Engine Console controller package
 #
 # This file is part of App Engine Console.
 #
@@ -15,29 +15,4 @@
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import os
-import re
-import sys
-import cgi
-import code
-import logging
-
-from controller import console as controller
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
-
-application = webapp.WSGIApplication([
-    ('/'         , controller.Console),
-    ('/console.*', controller.Console),
-    ('/help.*'   , controller.Help),
-    ('/statement', controller.Statement),
-    ('/banner'   , controller.Banner),
-], debug=True)
-
-def main():
-    logging.getLogger().setLevel(logging.DEBUG)
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()
+"""App Engine Console controller package"""
