@@ -24,10 +24,10 @@
     {{app}}
   </title>
   <link rel="icon" href="/favicon.ico" />
-  <link type="text/css" rel="stylesheet" href="/static/style/console.css" />
-  <link href="/static/style/interpreter.css" rel="stylesheet" type="text/css" />
-  <script type="text/javascript" src="/static/javascript/MochiKit.js"></script>
-  <script type="text/javascript" src="/static/javascript/interpreter.js"></script>
+  <link type="text/css" rel="stylesheet" href="/console/static/style/console.css" />
+  <link href="/console/static/style/interpreter.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="/console/static/javascript/MochiKit.js"></script>
+  <script type="text/javascript" src="/console/static/javascript/interpreter.js"></script>
 </head>
 <body>
 
@@ -78,9 +78,9 @@
     {% block mainmenu2 %}
         {% for sub in subpages %}
             {% ifequal sub subpage %}
-                <a href="/{{controller|lower}}/{{sub}}" class="active">{{sub|capfirst}}</a>
+                <a href="/console/{{controller|lower}}/{{sub}}" class="active">{{sub|capfirst}}</a>
             {% else %}
-                <a href="/{{controller|lower}}/{{sub}}">{{sub|capfirst}}</a>
+                <a href="/console/{{controller|lower}}/{{sub}}">{{sub|capfirst}}</a>
             {% endifequal %}
 
             {% if not forloop.last %}

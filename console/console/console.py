@@ -33,11 +33,11 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 application = webapp.WSGIApplication([
-    ('/'         , controller.Console),
-    ('/console.*', controller.Console),
-    ('/help.*'   , controller.Help),
-    ('/statement', controller.Statement),
-    ('/banner'   , controller.Banner),
+    ('/'                 , controller.Root),
+    ('/console/'         , controller.Console),
+    ('/console/help.*'   , controller.Help),
+    ('/console/statement', controller.Statement),
+    ('/console/banner'   , controller.Banner),
 ], debug=True)
 
 def main():

@@ -109,14 +109,14 @@ class Page(webapp.RequestHandler):
         self.values['version']  = self.appVersion
         self.values['subpages'] = self.subpages
         self.values['is_dev']   = os.environ['SERVER_SOFTWARE'].startswith('Dev')
-        self.values['pages']    = [ {'name':'Console', 'href':'/'},
-                                    {'name':'Help'   , 'href':'/help/'} ]
+        self.values['pages']    = [ {'name':'Console', 'href':'/console/'},
+                                    {'name':'Help'   , 'href':'/console/help/'} ]
 
         path = os.environ['PATH_INFO']
         self.values['path'] = path
         self.values['controller'] = self.page.capitalize()
 
-        match = re.search(r'^/%s/(.+)$' % self.page, path)
+        match = re.search(r'^/console/%s/(.+)$' % self.page, path)
         if match:
             # Handle a sub-path which is within the main controller path (e.g. /help/something instead of just /help).
             self.values['subpage'] = match.groups()[0]
@@ -165,11 +165,15 @@ class Console(Page):
 
 class Help(Page):
     subpages = ['usage', 'about']
-
     def get(self):
         self.write()
 
-__all__ = ['Console', 'Help', 'Statement', 'Banner']
+class Root(Page):
+    subpages = []
+    def get(self):
+        self.redirect('/console/')
+
+__all__ = ['Console', 'Help', 'Statement', 'Banner', 'Root']
 
 if __name__ == "__main__":
     logging.error('I should be running unit tests')

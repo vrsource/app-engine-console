@@ -55,7 +55,7 @@ InterpreterManager.prototype.initialize = function () {
 };
 
 InterpreterManager.prototype.banner = function () {
-    var d = loadJSONDoc('/banner');
+    var d = loadJSONDoc('/console/banner');
 
     var fetchSuccess = function(response) {
         appendChildNodes('interpreter_output',
@@ -313,7 +313,7 @@ InterpreterManager.prototype.runCode = function (allCode, id) {
             'code'     : allCode
         };
 
-        var d = loadJSONDoc('/statement', values);
+        var d = loadJSONDoc('/console/statement', values);
 
         var fetchSuccess = function(response) {
             var oldCode = getElement(response.id);

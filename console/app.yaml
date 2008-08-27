@@ -6,9 +6,13 @@ api_version: 1
 default_expiration: 7d  # This is good for images, which never change
 
 handlers:
-- url: /static
+- url: /console/static
   static_dir: console/view/static
   expiration: 30m  # Changes more often
 
-- url: .*
+- url: /console.*
+  script: console/console.py
+
+# Delete this unless you want a Python console on the front page.
+- url: /
   script: console/console.py
