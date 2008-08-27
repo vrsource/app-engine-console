@@ -140,5 +140,7 @@ class Help(Page):
     def get(self):
         self.write()
 
+__all__ = ['Console', 'Help', 'Statement', 'Banner']
+
 if __name__ == "__main__":
     logging.error('I should be running unit tests')

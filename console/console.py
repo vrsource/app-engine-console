@@ -26,7 +26,7 @@ from os.path import join, dirname
 sys.path.insert(0, join(dirname(__file__), 'lib'))
 
 import logging
-from controller import console as controller
+import controller
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
