@@ -138,11 +138,20 @@ class Page(webapp.RequestHandler):
         logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))
         self.response.out.write(template.render(self.template, self.values))
 
+    def do_get(self):
+        """This is called upon an HTTP GET.  It may be implemented by the subclass."""
+        pass
+
+    def get(self):
+        self.values['user'] = users.get_current_user()
+        self.do_get()
+        if not hasattr(self, 'done') or self.done != True:
+            self.write()
 
 class Console(Page):
     subpages = []
 
-    def get(self):
+    def do_get(self):
         # Set up the session. TODO: garbage collect old shell sessions
         session_key = self.request.get('session')
         if session_key:
@@ -164,17 +173,14 @@ class Console(Page):
             {'id':'teamwork' , 'options': ['Flying Solo' , 'Pastebin', 'Chatting']},
         ]
 
-        self.write()
-
 class Help(Page):
     subpages = ['usage', 'about']
-    def get(self):
-        self.write()
 
 class Root(Page):
     subpages = []
-    def get(self):
+    def do_get(self):
         self.redirect('/console/')
+        self.done = True
 
 __all__ = ['Console', 'Help', 'Statement', 'Banner', 'Root']
 
