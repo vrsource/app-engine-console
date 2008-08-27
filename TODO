@@ -4,6 +4,7 @@ Bugs
 * Deleting an unpicklable from the session does not work
 * Probably should send data via HTTP POST
 * Refactor out all the unused code from the Javascript
+* Logging the email of the user who runs every command
 * Put stuff in the Help and About page
   * What all the settings do
   * Where to find the code
