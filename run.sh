@@ -30,4 +30,8 @@ app_version=`git log --pretty=format:'%ct%n' | head -1`
 echo "app_version=$app_version"
 export app_version
 
-exec dev_appserver.py "$my_app"
+if [ -z "$@" ]; then
+    exec dev_appserver.py "$my_app"
+else
+    exec appcfg.py "$@" "$my_app"
+fi
