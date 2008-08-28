@@ -167,6 +167,12 @@ class Statement(webapp.RequestHandler):
                         name = engine.exc_type.__name__
                         link = doclink('/library/exceptions.html#exceptions.%s' % name, name)
 
+                    match = re.search(r"<(module '(.*?)') \(built-in\)>$", plain)
+                    if match:
+                        name, mod_name = match.groups()
+                        name = name.replace("'", '&#39;')
+                        link = doclink('/library/%s.html' % mod_name, name)
+
                     moduleRE = r"^<(module '(.*?)') from '%s/lib/python%d.%d/\2\.py(?:[co])" % (sys.prefix, sys.version_info[0], sys.version_info[1])
                     match = re.search(moduleRE, plain)
                     if match:
