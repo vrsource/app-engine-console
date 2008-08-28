@@ -44,6 +44,7 @@ class AppEngineConsole(ShellSession):
     def __init__(self, *args, **kw):
         ShellSession.__init__(self, *args, **kw)
         self.output = None
+        self.exc_type = None
 
     def getPending(self):
         if self.pending_source is None:
@@ -60,6 +61,7 @@ class AppEngineConsole(ShellSession):
         complete (whether by error or not).  If the code is complete, the
         "output" attribute will have the text output of execution (stdout and stderr).
         """
+        self.exc_type = None
 
         logging.debug('input source: %s' % source)
         source = self.getPending() + source
@@ -67,8 +69,9 @@ class AppEngineConsole(ShellSession):
 
         try:
             bytecode = code.compile_command(source, '<string>', 'single')
-        except:
+        except BaseException, e:
             self.output = traceback.format_exc()
+            self.exc_type = type(e)
             return False    # Code execution completed (the hard way).
 
         if bytecode is None:

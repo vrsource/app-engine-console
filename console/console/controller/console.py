@@ -19,9 +19,11 @@ import os
 import re
 import sys
 import cgi
+import sets
 import string
 import logging
 import traceback
+import exceptions
 import simplejson
 
 import pygments
@@ -47,6 +49,10 @@ require_login_during_development = False
 # set this variable to True.
 allow_any_user = False
 
+# The location of the newer (Sphinx) Python documentation.  If you have a local
+# copy, you can set this to use your own version instead.
+PYTHON_DOC = 'http://docs.python.org/dev'
+
 #
 # No more configuration settings below here
 #
@@ -56,6 +62,11 @@ INITIAL_UNPICKLABLES = [
     'try: from autoexec import *\nexcept ImportError: pass',
 ]
 
+DOCUMENTED_EXCEPTIONS = sets.Set()
+for name in dir(exceptions):
+    e = getattr(exceptions, name)
+    if (type(e) is type) and issubclass(e, exceptions.BaseException):
+        DOCUMENTED_EXCEPTIONS.add(e)
 
 def is_dev():
     """Return whether the application environment is in development mode."""
@@ -145,6 +156,14 @@ class Statement(webapp.RequestHandler):
                 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
                 'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')),
             })
+
+        # Fancy linking to documented parts of Python.
+        if engine.exc_type and (engine.exc_type in DOCUMENTED_EXCEPTIONS):
+            name = engine.exc_type.__name__
+            path = '/library/exceptions.html#exceptions.%s' % name
+            link = '<a target="_blank" href="%s/%s">%s</a>' % (PYTHON_DOC, path, name)
+            logging.debug('Replacing with link: %s' % link)
+            output = output.replace(name, link)
 
         response = {
             'id' : id,
