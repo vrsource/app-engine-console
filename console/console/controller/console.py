@@ -47,7 +47,7 @@ require_login_during_development = False
 # In production mode, only administrators may use the console. However, if you
 # really want to allow any regular logged-in user to use the console, you can
 # set this variable to True.
-allow_any_user = False
+allow_any_user = True
 
 # Set this to True to enable automatic HTML links to the Python documentation for
 # exceptions, types, modules, etc.
@@ -130,6 +130,8 @@ class Statement(webapp.RequestHandler):
         session_key = self.request.get('session')
         output_templating = False
 
+        engine = model.AppEngineConsole.get(session_key)
+
         try:
             self.confirm_permission()
         except ConsoleError:
@@ -142,7 +144,6 @@ class Statement(webapp.RequestHandler):
             output_templating = True
         else:
             # Access granted.
-            engine = model.AppEngineConsole.get(session_key)
             result = engine.runsource(code)
             output = engine.output.strip()
 
