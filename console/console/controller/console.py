@@ -21,6 +21,7 @@ import sys
 import cgi
 import string
 import logging
+import traceback
 import simplejson
 
 import pygments
@@ -61,9 +62,17 @@ def is_dev():
     return os.environ['SERVER_SOFTWARE'].startswith('Dev')
 
 def is_production():
-    return True
     return (not is_dev())
 
+
+class ConsoleError(Exception):
+    """General error in console"""
+
+class NotLoggedInError(ConsoleError):
+    """Login required"""
+
+class NotAdminError(ConsoleError):
+    """Admin required"""
 
 class Statement(webapp.RequestHandler):
     def __init__(self):
@@ -74,56 +83,55 @@ class Statement(webapp.RequestHandler):
     def write(self, *args, **kw):
         self.response.out.write(*args, **kw)
 
+    def confirm_permission(self):
+        """Raises an exception if the user does not have permission to execute a statement"""
+        user = users.get_current_user()
+        nologin = NotLoggedInError('Hello! Please $login_link to use this console')
+        noadmin = NotAdminError('Please $logout_link, then log in as an administrator')
+
+        if is_production():
+            if not user:
+                raise nologin
+            else:
+                if allow_any_user:
+                    pass                    # Do what the man says.
+                else:
+                    if users.is_current_user_admin():
+                        pass                # Grant access to the admin.
+                    else:
+                        raise noadmin       # Administrator access required in production mode
+        else:
+            if not require_login_during_development:
+                pass                        # Unrestricted access during development mode
+            else:
+                if user:
+                    pass                    # Logged-in user allowed, even in development mode.
+                else:
+                    raise nologin             # Unlogged-in user not allowed in development mode
+
     def get(self):
         id   = self.request.get('id')
         code = self.request.get('code')
         session_key = self.request.get('session')
+        output_templating = False
 
-        user = users.get_current_user()
-        result = False
+        try:
+            self.confirm_permission()
+        except ConsoleError:
+            exc_type, exc_value, tb = sys.exc_info()
+            stack = traceback.extract_tb(tb)
+            stack.insert(0, ('<stdin>', 1, '<module>', code))
 
-        # This must be boolean True for the service to work.  If it is a string, it will
-        # be used for the rejection message.
-        usage = "You can't use this service"
-
-        # Some other error messages. Yes, they are totally bogus.  But the effect is pretty sweet.
-        login_required = ('Traceback (most recent call last):\n'
-                          '  File "<string>", line 1, in <module>\n'
-                          'NotLoggedInError: Hello! Please $login_link to use this console')
-        admin_required = ('Traceback (most recent call last):\n'
-                          '  File "<string>", line 1, in <module>\n'
-                          'NotAdminError: You must be the administrator to use this service. '
-                          'Please $logout_link and then log in as an administrator')
-
-        if is_production():
-            if not user:
-                usage = login_required      # Must be logged in in production mode, period.
-            else:
-                if allow_any_user:
-                    usage = True            # Do what the man says.
-                else:
-                    if users.is_current_user_admin():
-                        usage = True        # Grant access to the admin.
-                    else:
-                        usage = admin_required # Administrator access required in production mode
+            output = ('Traceback (most recent call last):\n' +
+                      ''.join(traceback.format_list(stack)) +
+                      ''.join(traceback.format_exception_only(exc_type, exc_value)))
+            result = False
+            output_templating = True
         else:
-            if not require_login_during_development:
-                usage = True                # Unrestricted access during development mode
-            else:
-                if user:
-                    usage = True            # Logged-in user allowed, even in development mode.
-                else:
-                    usage = login_required  # Development mode still requires logins.
-
-        if usage is True:
             # Access granted.
             engine = model.AppEngineConsole.get(session_key)
             result = engine.runsource(code)
             output = engine.output.strip()
-        else:
-            # For some reason, we can't process this request.
-            output = usage
-            result = False
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
@@ -134,8 +142,7 @@ class Statement(webapp.RequestHandler):
             if result == False:
                 output = pygments.highlight(output, self.resultLexer, self.formatter).strip()
 
-        if usage is not True:
-            # Replace the XXX-stuff with a real HTML link now that the HTML formatter is done.
+        if output_templating:
             output = string.Template(output).safe_substitute({
                 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
                 'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')),
