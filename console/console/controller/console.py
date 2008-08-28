@@ -167,6 +167,11 @@ class Statement(webapp.RequestHandler):
                         name = engine.exc_type.__name__
                         link = doclink('/library/exceptions.html#exceptions.%s' % name, name)
 
+                    match = re.search(r'^(None|False|True)$', plain)
+                    if match:
+                        name = match.groups()[0]
+                        link = doclink('/library/stdtypes.html#truth-value-testing', name)
+
                     if name and link:
                         logging.debug("Replacing '%s' with '%s'" % (name, link))
                         output = output.replace(name, link)
