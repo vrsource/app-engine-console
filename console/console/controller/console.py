@@ -89,7 +89,7 @@ class Statement(webapp.RequestHandler):
         # Some other error messages. Yes, they are totally bogus.  But the effect is pretty sweet.
         login_required = ('Traceback (most recent call last):\n'
                           '  File "<string>", line 1, in <module>\n'
-                          'NotLoggedInError: Hello! Please $login_link to use the console')
+                          'NotLoggedInError: Hello! Please $login_link to use this console')
         admin_required = ('Traceback (most recent call last):\n'
                           '  File "<string>", line 1, in <module>\n'
                           'NotAdminError: You must be the administrator to use this service. '
