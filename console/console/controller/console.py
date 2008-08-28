@@ -177,6 +177,11 @@ class Statement(webapp.RequestHandler):
                         name = match.groups()[0]
                         link = doclink('/library/stdtypes.html#numeric-types-int-float-long-complex', name)
 
+                    match = re.search(r"^<type '(str|unicode|list|tuple|buffer|xrange)'>$", plain)
+                    if match:
+                        name = match.groups()[0]
+                        link = doclink('/library/stdtypes.html#sequence-types-str-unicode-list-tuple-buffer-xrange', name)
+
                     if name and link:
                         logging.debug("Replacing '%s' with '%s'" % (name, link))
                         output = output.replace(name, link)
