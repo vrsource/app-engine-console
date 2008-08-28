@@ -22,3 +22,4 @@ Features
 * History saving across page reloads
 * See if IPython is pure-python and if so, maybe use it as the back-end
 * logging integration
+* Port the Javascript to jQuery
