@@ -182,6 +182,19 @@ class Statement(webapp.RequestHandler):
                         name = match.groups()[0]
                         link = doclink('/library/stdtypes.html#sequence-types-str-unicode-list-tuple-buffer-xrange', name)
 
+                    match = re.search(r"^<type '(set|frozenset)'>$", plain)
+                    if match:
+                        name = match.groups()[0]
+                        link = doclink('/library/stdtypes.html#set-types-set-frozenset', name)
+
+                    if plain == "<type 'dict'>":
+                        name = 'dict'
+                        link = doclink('/library/stdtypes.html#mapping-types-dict', name)
+
+                    if plain == "<type 'file'>":
+                        name = 'file'
+                        link = doclink('/library/stdtypes.html#file-objects', name)
+
                     if name and link:
                         logging.debug("Replacing '%s' with '%s'" % (name, link))
                         output = output.replace(name, link)
