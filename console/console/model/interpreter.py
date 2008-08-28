@@ -125,9 +125,10 @@ class AppEngineConsole(ShellSession):
                 finally:
                     sys.stdout = old_stdout
                     sys.stderr = old_stderr
-            except:
+            except BaseException, e:
                 # Show the user's exception.
                 self.output = traceback.format_exc()
+                self.exc_type = type(e)
                 return False    # Code execution completed (the hard way).
 
             buf.seek(0)
