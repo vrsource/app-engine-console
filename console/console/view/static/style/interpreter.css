@@ -110,6 +110,10 @@ div.code .highlight {
 .banner { color: green; }
 .invisible { display: none; }
 
+.pygments * {
+    color: inherit;
+}
+
 /* Pygments styles for syntax hilighting */
 .pygments .hll { background-color: #ffffcc }
 .pygments { background: #f3f3f3; }
