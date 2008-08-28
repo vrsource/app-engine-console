@@ -203,7 +203,7 @@ class Statement(webapp.RequestHandler):
                         link = doclink('/library/stdtypes.html#file-objects', name)
 
                     if name and link:
-                        logging.debug("Replacing '%s' with '%s'" % (name, link))
+                        logging.debug("Replacing '%s' with '%s':\n%s" % (name, link, output))
                         output = output.replace(name, link)
 
         if output_templating:
