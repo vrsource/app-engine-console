@@ -119,9 +119,7 @@ class Statement(webapp.RequestHandler):
             self.confirm_permission()
         except ConsoleError:
             exc_type, exc_value, tb = sys.exc_info()
-            stack = traceback.extract_tb(tb)
-            stack.insert(0, ('<stdin>', 1, '<module>', code))
-
+            stack = (('<stdin>', 1, '<module>', code),)
             output = ('Traceback (most recent call last):\n' +
                       ''.join(traceback.format_list(stack)) +
                       ''.join(traceback.format_exception_only(exc_type, exc_value)))
