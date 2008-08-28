@@ -168,6 +168,7 @@ class Statement(webapp.RequestHandler):
                         link = doclink('/library/exceptions.html#exceptions.%s' % name, name)
 
                     if name and link:
+                        logging.debug("Replacing '%s' with '%s'" % (name, link))
                         output = output.replace(name, link)
 
         if output_templating:
