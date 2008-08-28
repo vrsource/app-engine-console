@@ -49,6 +49,10 @@ require_login_during_development = False
 # set this variable to True.
 allow_any_user = False
 
+# Set this to True to enable automatic HTML links to the Python documentation for
+# exceptions, types, modules, etc.
+python_doc_linking = True
+
 # The location of the newer (Sphinx) Python documentation.  If you have a local
 # copy, you can set this to use your own version instead.
 PYTHON_DOC = 'http://docs.python.org/dev'
@@ -148,22 +152,29 @@ class Statement(webapp.RequestHandler):
             code = pygments.highlight(code, self.lexer, self.formatter)
             code = code.strip().replace('\n', '')
 
-            if result == False:
-                output = pygments.highlight(output, self.resultLexer, self.formatter).strip()
+            if output:
+                plain = output.strip()
+                output = pygments.highlight(plain, self.resultLexer, self.formatter).strip()
+
+                # Fancy linking to documented parts of Python.
+                if python_doc_linking:
+                    name, link = None, None
+                    def doclink(path, name):
+                        """Return an HTML link to the documentation"""
+                        return '<a target="_blank" href="%s%s">%s</a>' % (PYTHON_DOC, path, name)
+
+                    if engine.exc_type and (engine.exc_type in DOCUMENTED_EXCEPTIONS):
+                        name = engine.exc_type.__name__
+                        link = doclink('/library/exceptions.html#exceptions.%s' % name, name)
+
+                    if name and link:
+                        output = output.replace(name, link)
 
         if output_templating:
             output = string.Template(output).safe_substitute({
                 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
                 'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')),
             })
-
-        # Fancy linking to documented parts of Python.
-        if engine.exc_type and (engine.exc_type in DOCUMENTED_EXCEPTIONS):
-            name = engine.exc_type.__name__
-            path = '/library/exceptions.html#exceptions.%s' % name
-            link = '<a target="_blank" href="%s/%s">%s</a>' % (PYTHON_DOC, path, name)
-            logging.debug('Replacing with link: %s' % link)
-            output = output.replace(name, link)
 
         response = {
             'id' : id,
