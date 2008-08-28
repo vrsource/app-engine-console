@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import cgi
+import string
 import logging
 import simplejson
 
@@ -60,6 +61,7 @@ def is_dev():
     return os.environ['SERVER_SOFTWARE'].startswith('Dev')
 
 def is_production():
+    return True
     return (not is_dev())
 
 
@@ -87,11 +89,11 @@ class Statement(webapp.RequestHandler):
         # Some other error messages. Yes, they are totally bogus.  But the effect is pretty sweet.
         login_required = ('Traceback (most recent call last):\n'
                           '  File "<string>", line 1, in <module>\n'
-                          'NotLoggedInError: Hello! Please XXX_LOGIN_LINK_XXX to use the console')
+                          'NotLoggedInError: Hello! Please $login_link to use the console')
         admin_required = ('Traceback (most recent call last):\n'
                           '  File "<string>", line 1, in <module>\n'
                           'NotAdminError: You must be the administrator to use this service. '
-                          'Please XXX_LOGOUT_LINK_XXX and then log in as an administrator')
+                          'Please $logout_link and then log in as an administrator')
 
         if is_production():
             if not user:
@@ -134,8 +136,10 @@ class Statement(webapp.RequestHandler):
 
         if usage is not True:
             # Replace the XXX-stuff with a real HTML link now that the HTML formatter is done.
-            output = output.replace('XXX_LOGIN_LINK_XXX', '<a href="%s">log in</a>' % users.create_login_url('/console/'))
-            output = output.replace('XXX_LOGOUT_LINK_XXX', '<a href="%s">log out</a>' % users.create_logout_url('/console/'))
+            output = string.Template(output).safe_substitute({
+                'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
+                'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')),
+            })
 
         response = {
             'id' : id,
