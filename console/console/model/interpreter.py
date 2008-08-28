@@ -72,6 +72,7 @@ class AppEngineConsole(ShellSession):
         except BaseException, e:
             self.output = traceback.format_exc()
             self.exc_type = type(e)
+            self.setPending('')
             return False    # Code execution completed (the hard way).
 
         if bytecode is None:
@@ -129,6 +130,7 @@ class AppEngineConsole(ShellSession):
                 # Show the user's exception.
                 self.output = traceback.format_exc()
                 self.exc_type = type(e)
+                self.setPending('')
                 return False    # Code execution completed (the hard way).
 
             buf.seek(0)
