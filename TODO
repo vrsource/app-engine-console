@@ -1,6 +1,7 @@
 Bugs
 ====
 
+* Add licensing and copyright info
 * Do not write to the DB until a user logs in.  Currently merely hitting the
   front page creates a new session in the DB.  Perhaps memcache it until they
   are granted their first statement?
