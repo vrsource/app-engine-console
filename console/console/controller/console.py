@@ -89,10 +89,11 @@ class NotAdminError(ConsoleError):
     """Admin required"""
 
 class Statement(webapp.RequestHandler):
-    def __init__(self):
-        self.lexer = pygments.lexers.PythonLexer()
-        self.resultLexer = pygments.lexers.PythonConsoleLexer()
-        self.formatter = pygments.formatters.HtmlFormatter()
+    lexer           = pygments.lexers.PythonLexer()
+    resultLexer     = pygments.lexers.PythonConsoleLexer()
+    inputFormatter  = pygments.formatters.HtmlFormatter(cssclass='statement')
+    outputFormatter = pygments.formatters.HtmlFormatter(cssclass='stdout')
+    errorFormatter  = pygments.formatters.HtmlFormatter(cssclass='stderr')
 
     def write(self, *args, **kw):
         self.response.out.write(*args, **kw)
@@ -144,13 +145,14 @@ class Statement(webapp.RequestHandler):
             # Access granted.
             result = engine.runsource(code)
             out = engine.out
+            logging.debug('out :%s:' % out)
             err = engine.err
+            logging.debug('err :%s:' % err)
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
             logging.debug('Highlighting code')
-            code = pygments.highlight(code, self.lexer, self.formatter)
-            code = code.strip().replace('\n', '')
+            code = pygments.highlight(code, self.lexer, self.inputFormatter)
 
             if out:
                 out = self.highlight(out)
@@ -176,7 +178,11 @@ class Statement(webapp.RequestHandler):
     def highlight(self, code, exc_type=None):
         """Return syntax-highlighted code using the PythonConsole lexer."""
         plain = code
-        output = pygments.highlight(plain, self.resultLexer, self.formatter).strip()
+        formatter = self.outputFormatter
+        if exc_type:
+            formatter = self.errorFormatter
+
+        output = pygments.highlight(plain, self.resultLexer, formatter).strip()
 
         # Fancy linking to documented parts of Python.
         if not python_doc_linking:

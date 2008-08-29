@@ -62,23 +62,18 @@ input.textbox {
 }
 
 #console_output {
-    display: inline;
     font-family: monospace, "lucida console", Courier;
     font-size: .60em;
 }
 
-#console_output div.code,
-#console_output div.highlight {
-    display: inline;
-    white-space: pre;
-}
-
-#console_output div.code pre {
-    display: inline;
+#console_output div.statement,
+#console_output div.statement pre {
     margin: 0;
+    display: inline;
 }
 
-#console_output div.data pre {
+#console_output pre.output,
+#console_output div.output pre {
     margin: 0;
 }
 
@@ -97,18 +92,11 @@ div.promptBox {
 
 input.textbox:focus { background-color: #FFFEE3; }
 
-/*
-div.code,
-div.code .highlight {
-    display: inline;
-}
-*/
-
-.code { color: blue; }
-.data { color: black; }
-.error { color: red; }
-.banner { color: green; }
-.invisible { display: none; }
+#console_output .statement, #console_output .prompt { color: blue; }
+#console_output .output { color: black; }
+#console_output .error { color: red; }
+#console_output .banner { color: green; }
+#console_output .invisible { display: none; }
 
 .pygments * {
     color: inherit;

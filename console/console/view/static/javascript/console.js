@@ -60,19 +60,11 @@ var statementSubmit = function(event) {
             return;
         }
 
-        var id = 'statement_' + uid();
-        var statementContainer = $('<div>')
-            .addClass('code')
-            .addClass('pygments').append(
-                // This is a temporary representation of the code.  When the server replies,
-                // it will re-send the code that it processed (usually marked up with syntax
-                // highlighting), upon which we will replace this with the server's version.
-                $('<span>')
-                    .addClass('code')
-                    .append(statement)
-            );
-
-        $('#console_output').append(statementContainer).append('<br />');
+        // This is a temporary representation of the code.  When the server replies,
+        // it will re-send the code that it processed (possibly marked up with syntax
+        // highlighting), and we will replace the content with the server's version.
+        var statementContainer = $('<span>').addClass('statement').append(statement);
+        $('#console_output').append(statementContainer);
 
         // Bring the history up to date.
         hist.buffer.push(statement);
@@ -104,23 +96,19 @@ var statementSubmit = function(event) {
 
             // Replace the old temporarary code with the server's version.
             statementContainer.html(response.in);
+            if(highlight)
+                statementContainer.addClass('pygments');
 
             // Append the server output.
             if(response.out && response.out.length) {
+                var output;
                 if(highlight)
-                    $('#console_output').append(
-                        $('<div>')
-                            .addClass('pygments')
-                            .addClass('data')
-                            .append(response.out)
-                    );
-                else {
-                    $('#console_output').append(
-                        $('<span>')
-                            .addClass('data')
-                            .append(response.out)
-                    ).append('<br/>');
-                }
+                    output = $('<div>').addClass('pygments');
+                else
+                    output = $('<pre>');
+                
+                output.addClass('output').append(response.out)
+                $('#console_output').append(output);
 
                 scrollOutput();
             }
@@ -203,7 +191,7 @@ var fetchBanner = function() {
 var showPrompt = function(continuing) {
     var promptStr = continuing ? ps2 : ps1;
     $('#console_output').append(
-        $('<span>').addClass('code').append(promptStr)
+        $('<span>').addClass('prompt').append(promptStr)
     );
 
     scrollOutput();
