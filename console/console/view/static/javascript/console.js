@@ -26,13 +26,27 @@ var main = function() {
 
 var statementSubmit = function(event) {
     try {
-        var statement = $('#console_statement').val();
+        var input = $('#console_statement');
+        var statement = input.val();
         console.debug('Statement submitted: %s', statement);
 
         if(statement == 'clear') {
             cls();
             return;
         }
+
+        var id = 'statement_' + uid();
+        $('#console_output').append(
+            $('<div>')
+                .attr('id', id)
+                .addClass('code').addClass('pygments')
+                .append(
+                    $('<span>')
+                        .addClass('code')
+                        .append(statement))
+        ).append('<br/>');
+
+        input.val('');
 
         scrollOutput();
     }
@@ -70,6 +84,15 @@ var moveHistory = function(delta) {
 var scrollOutput = function() {
     console.debug('TODO: scroll output window');
 };
+
+/* Generate IDs unique for the current page load. It uses a closure to maintain state. */
+var uid = (function() {
+        var id = 0;
+        return function() {
+            return id++;
+        };
+    }
+)();
 
 /*
  * __END__

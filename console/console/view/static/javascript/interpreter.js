@@ -7,16 +7,6 @@ InterpreterManager = function () {
     bindMethods(this);
 };
 
-/* Generate IDs unique for the current page load. It uses a closure to maintain state. */
-InterpreterManager.prototype.uid = (
-    function() {
-        var id = 0;
-        return function() {
-            return id++;
-        };
-    }
-)();
-
 InterpreterManager.prototype.initialize = function () {
     var interpreter = getElement("interpreter_text");
     if(interpreter != null)
@@ -246,15 +236,7 @@ InterpreterManager.prototype.doEval = EvalFunctions.choose();
 InterpreterManager.prototype.doSubmit = function () {
     var elem = getElement("interpreter_text");
     var code = elem.value;
-    elem.value = "";
 
-    var id = 'command_' + this.uid();
-    appendChildNodes("interpreter_output",
-        DIV({'id': id, 'class': 'code pygments'},
-            SPAN({"class": "code"}, code)
-        ),
-        BR()
-    );
     this.lines.push(code);
     this.history.push(code);
     this.historyPos = -1;
