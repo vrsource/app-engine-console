@@ -1,12 +1,3 @@
-/*
-
-    Interpreter: JavaScript Interactive Interpreter
-
-*/
-InterpreterManager = function () {
-    bindMethods(this);
-};
-
 InterpreterManager.prototype.initialize = function () {
     var interpreter = getElement("interpreter_text");
     if(interpreter != null)
@@ -33,60 +24,6 @@ InterpreterManager.prototype.initialize = function () {
         // Also, get the current setting as some browsers cache the choice through a reload.
         this.setTeamwork();
     }
-};
-
-InterpreterManager.prototype.doSubmit = function () {
-    var elem = getElement("interpreter_text");
-    var code = elem.value;
-
-    this.runCode(allCode, id);
-
-    var consoleWindow = this;
-
-    try {
-        var values = {
-            'id'       : id,
-            'session'  : getElement('setting_session').value,
-            'highlight': highlight,
-            'code'     : allCode
-        };
-
-        var d = loadJSONDoc('/console/statement', values);
-
-        var fetchSuccess = function(response) {
-            var oldCode = getElement(response.id);
-            oldCode.innerHTML = response.in;
-            
-            if(!isEmpty(response.out))
-                consoleWindow.showResult(response.out);
-
-            window.showPrompt(response.result);
-        };
-
-        var fetchFail = function(err) {
-            alert('Query failed');
-            // TODO: Perhaps append the prompt.
-        };
-
-        d.addCallbacks(fetchSuccess, fetchFail);
-    } catch (e) {
-        // mozilla shows some keys more than once!
-        this.showError(e);
-        return;
-    }
-};
-
-window.writeln = function () {
-    appendChildNodes("interpreter_output",
-        SPAN({"class": "data"}, arguments),
-        BR()
-    );
-    interpreterManager.doScroll();
-};
-
-window.clear = function () {
-    replaceChildNodes("interpreter_output");
-    getElement("interpreter_area").scrollTop = 0;
 };
 
 interpreterManager = new InterpreterManager();
