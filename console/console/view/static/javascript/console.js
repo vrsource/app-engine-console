@@ -183,7 +183,16 @@ var moveHistory = function(delta) {
 };
 
 var scrollOutput = function() {
-    console.debug('TODO: scroll output window');
+    var area = $('#console_area').get(0);
+
+    var last = $('#console_output').children().slice(-1).get(0);
+    if((typeof(last) == 'undefined') || (last == null))
+        return;
+
+    if(area.offsetHeight > area.scrollHeight)
+        area.scrollTop = 0;
+    else
+        area.scrollTop = area.scrollHeight;
 };
 
 /* Generate IDs unique for the current page load. It uses a closure to maintain state. */

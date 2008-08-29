@@ -35,19 +35,6 @@ InterpreterManager.prototype.initialize = function () {
     }
 };
 
-InterpreterManager.prototype.doScroll = function () {
-    var p = getElement("interpreter_output").lastChild;
-    if (typeof(p) == "undefined" || p == null) {
-        return;
-    }
-    var area = getElement("interpreter_area");
-    if (area.offsetHeight > area.scrollHeight) {
-        area.scrollTop = 0;
-    } else {
-        area.scrollTop = area.scrollHeight;
-    }
-};
-
 InterpreterManager.prototype.moveHistory = function (dir) {
     // totally bogus value
     if (dir == 0 || this.history.length == 0) {
