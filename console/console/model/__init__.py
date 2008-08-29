@@ -17,4 +17,4 @@
 
 """App Engine Console models package"""
 
-from interpreter import AppEngineConsole
+from console import AppEngineConsole
