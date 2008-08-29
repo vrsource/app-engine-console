@@ -5,7 +5,6 @@ Bugs
 * Do not write to the DB until a user logs in.  Currently merely hitting the
   front page creates a new session in the DB.  Perhaps memcache it until they
   are granted their first statement?
-* Standard module links do not work in production mode
 * Deleting an unpicklable from the session does not work
 * Refactor out all the unused code from the Javascript
 * Logging the email of the user who runs every command
