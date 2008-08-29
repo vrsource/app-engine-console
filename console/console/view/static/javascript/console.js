@@ -44,8 +44,11 @@ var statementSubmit = function(event) {
         var statement = input.val();
         console.debug('Statement submitted: %s', statement);
 
+        input.val('');
+
         if(statement == 'clear') {
-            cls();
+            $('#console_output').html('');
+            $('#console_area').get(0).scrollTop = 0;
             return;
         }
 
@@ -62,8 +65,6 @@ var statementSubmit = function(event) {
             );
 
         $('#console_output').append(statementContainer).append('<br />');
-
-        input.val('');
 
         // Bring the history up to date.
         hist.buffer.push(statement);
