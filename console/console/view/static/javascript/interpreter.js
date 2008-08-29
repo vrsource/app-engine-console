@@ -12,7 +12,6 @@ InterpreterManager.prototype.initialize = function () {
     if(interpreter != null)
         interpreter.focus();
 
-    this.banner();
     this.lines = [];
     this.history = [];
     this.currentHistory = "";
@@ -37,28 +36,6 @@ InterpreterManager.prototype.initialize = function () {
         // Also, get the current setting as some browsers cache the choice through a reload.
         this.setTeamwork();
     }
-};
-
-InterpreterManager.prototype.banner = function () {
-    var d = loadJSONDoc('/console/banner');
-
-    var fetchSuccess = function(response) {
-        appendChildNodes('interpreter_output',
-            SPAN({'class': 'banner'}, response.banner),
-            BR()
-        );
-        window.showPrompt();
-    };
-
-    var fetchFail = function(err) {
-        appendChildNodes('interpreter_output',
-            SPAN({'class': 'error'}, '(Failed to fetch Python banner)'),
-            BR()
-        );
-        window.showPrompt();
-    };
-
-    d.addCallbacks(fetchSuccess, fetchFail);
 };
 
 InterpreterManager.prototype.submit = function (event) {

@@ -28,8 +28,11 @@ var hist = {
 var main = function() {
     console.debug('Starting');
 
+    // Event handlers
     $('#console_form').submit(statementSubmit);
     $('#console_statement').keyup(statementKeyUp);
+
+    fetchBanner();
 };
 
 var statementSubmit = function(event) {
@@ -138,6 +141,25 @@ var statementKeyUp = function(event) {
             moveHistory(1);
             break;
     }
+};
+
+var fetchBanner = function() {
+    var gotBanner = function(response, textStatus) {
+        // Handle the banner from the console.
+        var banner = $('<span>');
+
+        if(textStatus == 'success')
+            banner.addClass('banner').append(response.banner);
+        else {
+            console.error('Banner error: %s; response=%s', textStatus, response);
+            banner.addClass('error').append('(Failed to fetch Python banner)');
+        }
+        $('#console_output').append(banner).append('<br />');
+
+        showPrompt();
+    };
+
+    $.get('/console/banner', {}, gotBanner, 'json');
 };
 
 var showPrompt = function() {
