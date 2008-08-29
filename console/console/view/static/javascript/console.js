@@ -17,5 +17,5 @@
  */
 
 $(document).ready(function() {
-    alert('Ready');
+    console.debug('Ready');
 });
