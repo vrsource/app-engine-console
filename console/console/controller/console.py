@@ -143,7 +143,8 @@ class Statement(webapp.RequestHandler):
         else:
             # Access granted.
             result = engine.runsource(code)
-            output = engine.output.strip()
+            out = engine.out
+            err = engine.err
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
@@ -151,81 +152,95 @@ class Statement(webapp.RequestHandler):
             code = pygments.highlight(code, self.lexer, self.formatter)
             code = code.strip().replace('\n', '')
 
-            if output:
-                plain = output.strip()
-                output = pygments.highlight(plain, self.resultLexer, self.formatter).strip()
-
-                # Fancy linking to documented parts of Python.
-                if python_doc_linking:
-                    name, link = None, None
-                    def doclink(path, name):
-                        """Return an HTML link to the documentation"""
-                        return '<a target="_blank" href="%s%s">%s</a>' % (PYTHON_DOC, path, name)
-
-                    if engine.exc_type and (engine.exc_type in DOCUMENTED_EXCEPTIONS):
-                        name = engine.exc_type.__name__
-                        link = doclink('/library/exceptions.html#exceptions.%s' % name, name)
-
-                    match = re.search(r"<(module '(.*?)') \(built-in\)>$", plain)
-                    if match:
-                        name, mod_name = match.groups()
-                        name = name.replace("'", '&#39;')
-                        link = doclink('/library/%s.html' % mod_name, name)
-
-                    moduleRE = r"^<(module '(.*?)') from '%s/lib/python%d.%d/\2\.py[co]?'>$" % (sys.prefix, sys.version_info[0], sys.version_info[1])
-                    match = re.search(moduleRE, plain)
-                    if match:
-                        name, mod_name = match.groups()
-                        name = name.replace("'", '&#39;')
-                        link = doclink('/library/%s.html' % mod_name, name)
-
-                    match = re.search(r'^(None|False|True)$', plain)
-                    if match:
-                        name = match.groups()[0]
-                        link = doclink('/library/stdtypes.html#truth-value-testing', name)
-
-                    match = re.search(r"^<type '(int|float|long|complex)'>$", plain)
-                    if match:
-                        name = match.groups()[0]
-                        link = doclink('/library/stdtypes.html#numeric-types-int-float-long-complex', name)
-
-                    match = re.search(r"^<type '(str|unicode|list|tuple|buffer|xrange)'>$", plain)
-                    if match:
-                        name = match.groups()[0]
-                        link = doclink('/library/stdtypes.html#sequence-types-str-unicode-list-tuple-buffer-xrange', name)
-
-                    match = re.search(r"^<type '(set|frozenset)'>$", plain)
-                    if match:
-                        name = match.groups()[0]
-                        link = doclink('/library/stdtypes.html#set-types-set-frozenset', name)
-
-                    if plain == "<type 'dict'>":
-                        name = 'dict'
-                        link = doclink('/library/stdtypes.html#mapping-types-dict', name)
-
-                    if plain == "<type 'file'>":
-                        name = 'file'
-                        link = doclink('/library/stdtypes.html#file-objects', name)
-
-                    if name and link:
-                        logging.debug("Replacing '%s' with '%s':\n%s" % (name, link, output))
-                        output = output.replace(name, link)
+            if out:
+                out = self.highlight(out)
+            if err:
+                err = self.highlight(err, engine.exc_type)
 
         if output_templating:
-            output = string.Template(output).safe_substitute({
+            err = string.Template(err).safe_substitute({
                 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
                 'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')),
             })
 
         response = {
             'in' : code,
-            'out': output,
+            'out': out + err,
             'result': result,
         }
 
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.write(simplejson.dumps(response))
         logging.debug('sending')
+
+    def highlight(self, code, exc_type=None):
+        """Return syntax-highlighted code using the PythonConsole lexer."""
+        plain = code
+        output = pygments.highlight(plain, self.resultLexer, self.formatter).strip()
+
+        # Fancy linking to documented parts of Python.
+        if not python_doc_linking:
+            return output
+
+        # Otherwise, try to find stuff to link to.
+        name, link = None, None
+
+        def doclink(path, name):
+            """Return an HTML link to the documentation"""
+            return '<a target="_blank" href="%s%s">%s</a>' % (PYTHON_DOC, path, name)
+
+        if exc_type in DOCUMENTED_EXCEPTIONS:
+            name = exc_type.__name__
+            link = doclink('/library/exceptions.html#exceptions.%s' % name, name)
+
+        match = re.search(r"<(module '(.*?)') \(built-in\)>$", plain)
+        if match:
+            name, mod_name = match.groups()
+            name = name.replace("'", '&#39;')
+            link = doclink('/library/%s.html' % mod_name, name)
+
+        moduleRE = r"^<(module '(.*?)') from '%s/lib/python%d.%d/\2\.py[co]?'>$" % (sys.prefix, sys.version_info[0], sys.version_info[1])
+        match = re.search(moduleRE, plain)
+        if match:
+            name, mod_name = match.groups()
+            name = name.replace("'", '&#39;')
+            link = doclink('/library/%s.html' % mod_name, name)
+
+        match = re.search(r'^(None|False|True)$', plain)
+        if match:
+            name = match.groups()[0]
+            link = doclink('/library/stdtypes.html#truth-value-testing', name)
+
+        match = re.search(r"^<type '(int|float|long|complex)'>$", plain)
+        if match:
+            name = match.groups()[0]
+            link = doclink('/library/stdtypes.html#numeric-types-int-float-long-complex', name)
+
+        match = re.search(r"^<type '(str|unicode|list|tuple|buffer|xrange)'>$", plain)
+        if match:
+            name = match.groups()[0]
+            link = doclink('/library/stdtypes.html#sequence-types-str-unicode-list-tuple-buffer-xrange', name)
+
+        match = re.search(r"^<type '(set|frozenset)'>$", plain)
+        if match:
+            name = match.groups()[0]
+            link = doclink('/library/stdtypes.html#set-types-set-frozenset', name)
+
+        if plain == "<type 'dict'>":
+            name = 'dict'
+            link = doclink('/library/stdtypes.html#mapping-types-dict', name)
+
+        if plain == "<type 'file'>":
+            name = 'file'
+            link = doclink('/library/stdtypes.html#file-objects', name)
+
+        # Finally, do the replacing if needed.
+        if name and link:
+            logging.debug("Replacing '%s' with '%s':\n%s" % (name, link, output))
+            output = output.replace(name, link)
+
+        return output
+
 
 class Banner(webapp.RequestHandler):
     def get(self):

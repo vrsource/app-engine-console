@@ -43,7 +43,11 @@ class AppEngineConsole(ShellSession):
 
     def __init__(self, *args, **kw):
         ShellSession.__init__(self, *args, **kw)
-        self.output = None
+        self.fresh()
+
+    def fresh(self):
+        self.out = ''
+        self.err = ''
         self.exc_type = None
 
     def getPending(self):
@@ -61,7 +65,7 @@ class AppEngineConsole(ShellSession):
         complete (whether by error or not).  If the code is complete, the
         "output" attribute will have the text output of execution (stdout and stderr).
         """
-        self.exc_type = None
+        self.fresh()
 
         logging.debug('input source: %s' % source)
         source = self.getPending() + source
@@ -70,15 +74,14 @@ class AppEngineConsole(ShellSession):
         try:
             bytecode = code.compile_command(source, '<string>', 'single')
         except BaseException, e:
-            self.output = traceback.format_exc()
-            self.exc_type = type(e)
             self.setPending('')
+            self.exc_type = type(e)
+            self.err = traceback.format_exc()
             return False    # Code execution completed (the hard way).
 
         if bytecode is None:
             logging.debug('Code not complete; saving pending source')
             self.setPending('%s\n' % source)
-            self.output = ''
             return True     # Compilation still pending; awaiting lines of code.
 
         logging.debug('Compilation successful')
@@ -109,7 +112,7 @@ class AppEngineConsole(ShellSession):
                     statement_module.__dict__[name] = val
                 except:
                     msg = 'Dropping %s since it could not be unpickled' % name
-                    self.output += '%s\n' % msg
+                    self.out += '%s\n' % msg
                     logging.warning('%s:\n%s' % (msg, traceback.format_exc()))
                     self.remove_global(name)
 
@@ -127,16 +130,17 @@ class AppEngineConsole(ShellSession):
                     sys.stdout = old_stdout
                     sys.stderr = old_stderr
             except BaseException, e:
-                # Show the output and user's exception.
+                # Store the output and user's exception.
                 buf.seek(0)
-                self.output = buf.read() + traceback.format_exc()
+                self.out = buf.read()
+                self.err = traceback.format_exc()
                 self.exc_type = type(e)
                 self.setPending('')
                 return False    # Code execution completed (the hard way).
 
             buf.seek(0)
-            self.output = buf.read()
-            logging.debug('Execution result:\n%s' % self.output)
+            self.out = buf.read()
+            logging.debug('Execution result:\n%s' % self.out)
             self.setPending('')
 
             # Extract the new globals that this statement added.
