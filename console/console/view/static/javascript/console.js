@@ -34,6 +34,10 @@ var main = function() {
     // Event handlers
     $('#console_form').submit(statementSubmit);
     $('#console_statement').keyup(statementKeyUp);
+    $('#setting_teamwork').change(setTeamwork);
+
+    // Some browsers cache the <select> option, so do the teamwork thing now.
+    setTeamwork();
 
     fetchBanner();
 
@@ -223,6 +227,65 @@ var scrollOutput = function() {
         area.scrollTop = 0;
     else
         area.scrollTop = area.scrollHeight;
+};
+
+var setTeamwork = function(event) {
+    /* Handle the various teamwork settings. */
+    var choice     = $('#setting_teamwork').val();
+    var talkinator = $('#talkinator');
+    var pastebin   = $('#pastebin');
+    var console    = $('#console_interface');
+
+    /* Talkinator stuff */
+    var showTalkinator = function() {
+        var room = $('#setting_room').val();
+        var widgetWidth = 250;
+        var consoleOffset = widgetWidth + 10;
+
+        console.width(console.width() - consoleOffset);
+        talkinator.width(widgetWidth);
+        talkinator.css('display', 'block');
+        talkinator.html(
+            '<iframe width="' + widgetWidth + '" height="540" marginwidth="0" marginheight="0" scrolling="no"' +
+            '       style="border: 2px solid #93b7fa" frameborder="0"'                         +
+            '       src="http://t8r4.info/$r?s=0&t=h&w=250&h=540&c=93b7fa&b=' + room + '"> '   +
+            '</iframe>');
+    };
+
+    var hideTalkinator = function() {
+        talkinator.html('');
+        talkinator.css('display', 'none');
+        talkinator.width(0);
+        console.width('100%');
+    };
+
+    /* Pastebin stuff */
+    var showPastebin = function() {
+        pastebin.css('display', 'block');
+        pastebin.html(
+            '<iframe width="100%" height="400" marginwidth="0" marginheight="0" scrolling="yes"' +
+            '       style="border: 2px solid #93b7fa" frameborder="0"'                          +
+            '       src="http://pastebin.com/"> '                                               +
+            '</iframe>');
+    };
+
+    var hidePastebin = function() {
+        pastebin.html('');
+        pastebin.css('display', 'none');
+    };
+
+    if(choice == 'Chatting') {
+        hidePastebin();
+        showTalkinator();
+    }
+    else if(choice == 'Pastebin') {
+        hideTalkinator();
+        showPastebin();
+    }
+    else {
+        hidePastebin();
+        hideTalkinator();
+    }
 };
 
 /* Generate IDs unique for the current page load. It uses a closure to maintain state. */
