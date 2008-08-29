@@ -16,6 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+//(function() {
+
 // Processing begins here.
 var main = function() {
     console.debug('Starting');
@@ -94,7 +96,23 @@ var uid = (function() {
     }
 )();
 
-/*
- * __END__
- */
+//
+// __END__
+//
+
+// Support no-op logging in a non-Firebug environment.
+try {
+    console;
+}
+catch(e) {
+    var noop = function() {};
+    console = {
+        'debug' : noop,
+        'info'  : noop,
+        'error' : noop
+    };
+}
+
 $(document).ready(main);
+
+//})();
