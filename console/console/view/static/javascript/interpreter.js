@@ -18,9 +18,6 @@ InterpreterManager.prototype.uid = (
 )();
 
 InterpreterManager.prototype.initialize = function () {
-    if(getElement('interpreter_form') != null)
-        connect("interpreter_form", "onsubmit", this.submit);
-
     var interpreter = getElement("interpreter_text");
     if(interpreter != null)
         interpreter.focus();
@@ -250,17 +247,6 @@ InterpreterManager.prototype.doSubmit = function () {
     var elem = getElement("interpreter_text");
     var code = elem.value;
     elem.value = "";
-
-    if(code == 'clear') {
-        window.clear();
-        return;
-    }
-
-    var isContinuation = false;
-    if (code.length >= 2 && code.lastIndexOf("//") == code.length - 2) {
-        isContinuation = true;
-        code = code.substr(0, code.length - 2);
-    }
 
     var id = 'command_' + this.uid();
     appendChildNodes("interpreter_output",

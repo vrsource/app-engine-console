@@ -20,7 +20,25 @@
 var main = function() {
     console.debug('Starting');
 
+    $('#console_form').submit(statementSubmit);
     $('#console_statement').keyup(statementKeyUp);
+};
+
+var statementSubmit = function(event) {
+    try {
+        var statement = $('#console_statement').val();
+        console.debug('Statement submitted: %s', statement);
+
+        if(statement == 'clear') {
+            cls();
+            return;
+        }
+
+        scrollOutput();
+    }
+    finally {
+        event.preventDefault();
+    }
 };
 
 var statementKeyUp = function(event) {
@@ -41,8 +59,16 @@ var statementKeyUp = function(event) {
     }
 };
 
+var cls = function() {
+    console.debug('Clearing screen');
+};
+
 var moveHistory = function(delta) {
     console.debug('Moving history by %d', delta);
+};
+
+var scrollOutput = function() {
+    console.debug('TODO: scroll output window');
 };
 
 /*
