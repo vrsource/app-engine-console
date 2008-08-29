@@ -18,8 +18,6 @@ InterpreterManager.prototype.uid = (
 )();
 
 InterpreterManager.prototype.initialize = function () {
-    if(getElement('interpreter_text') != null)
-        connect("interpreter_text", "onkeyup", this.keyUp);
     if(getElement('interpreter_form') != null)
         connect("interpreter_form", "onsubmit", this.submit);
 
@@ -170,20 +168,6 @@ InterpreterManager.prototype.runMultipleLines = function (text) {
     );
     this.runCode(text);
 }
-
-InterpreterManager.prototype.keyUp = function (e) {
-    var key = e.key();
-    // if any meta key is pressed, don't handle the signal
-    if (e.modifier().any) {
-        return;
-    }
-    switch (key.string) {
-        case 'KEY_ARROW_UP': this.moveHistory(-1); break;
-        case 'KEY_ARROW_DOWN': this.moveHistory(1); break;
-        default: return;
-    }
-    e.stop();
-};
 
 InterpreterManager.prototype.blockOn = function (d) {
     var node = SPAN({"class": "banner"}, "blocking on " + repr(d) + "...");

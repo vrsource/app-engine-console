@@ -19,8 +19,31 @@
 // Processing begins here.
 var main = function() {
     console.debug('Starting');
+
+    $('#console_statement').keyup(statementKeyUp);
 };
 
+var statementKeyUp = function(event) {
+    var orig = event.originalEvent;
+    if(orig.shiftKey || orig.altKey || orig.metaKey || orig.ctrlKey) {
+        console.debug('Ignoring keypress with a modifier key');
+        return;
+    }
+
+    var key = event.charCode || event.keyCode || 0;
+    switch(key) {
+        case 38:
+            moveHistory(-1);
+            break;
+        case 40:
+            moveHistory(1);
+            break;
+    }
+};
+
+var moveHistory = function(delta) {
+    console.debug('Moving history by %d', delta);
+};
 
 /*
  * __END__
