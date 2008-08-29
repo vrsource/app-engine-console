@@ -24,7 +24,6 @@ import string
 import logging
 import traceback
 import exceptions
-import simplejson
 
 import pygments
 import pygments.lexers
@@ -36,7 +35,7 @@ from google.appengine.api        import users
 from google.appengine.ext        import db
 from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
-
+from django.utils                import simplejson
 
 # In production mode (hosted at Google), anonymous users may not use the console.
 # But in development mode, anonymous users may.  If you still want to disallow
