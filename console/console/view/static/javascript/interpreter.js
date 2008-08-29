@@ -35,33 +35,6 @@ InterpreterManager.prototype.initialize = function () {
     }
 };
 
-InterpreterManager.prototype.moveHistory = function (dir) {
-    // totally bogus value
-    if (dir == 0 || this.history.length == 0) {
-        return;
-    }
-    var elem = getElement("interpreter_text");
-    if (this.historyPos == -1) {
-        this.currentHistory = elem.value;
-        if (dir > 0) {
-            return;
-        }
-        this.historyPos = this.history.length - 1;
-        elem.value = this.history[this.historyPos];
-        return;
-    }
-    if (this.historyPos == 0 && dir < 0) {
-        return;
-    }
-    if (this.historyPos == this.history.length - 1 && dir > 0) {
-        this.historyPos = -1;
-        elem.value = this.currentHistory;
-        return;
-    } 
-    this.historyPos += dir;
-    elem.value = this.history[this.historyPos];
-}
-
 InterpreterManager.prototype.doSubmit = function () {
     var elem = getElement("interpreter_text");
     var code = elem.value;

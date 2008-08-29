@@ -179,7 +179,32 @@ var cls = function() {
 };
 
 var moveHistory = function(delta) {
-    console.debug('Moving history by %d', delta);
+    // totally bogus value
+    if (delta == 0 || hist.buffer.length == 0)
+        return;
+
+    var input = $('#console_statement');
+
+    if (hist.position == -1) {
+        hist.pending = input.val();
+        if (delta > 0)
+            return;
+        hist.position = hist.buffer.length - 1;
+        input.val(hist.buffer[hist.position]);
+        return;
+    }
+
+    if (hist.position == 0 && delta < 0)
+        return;
+
+    if (hist.position == hist.buffer.length - 1 && delta > 0) {
+        hist.position = -1;
+        input.val(hist.pending);
+        return;
+    }
+
+    hist.position += delta;
+    input.val(hist.buffer[hist.position]);
 };
 
 var scrollOutput = function() {
