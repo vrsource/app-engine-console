@@ -139,20 +139,46 @@ var statementSubmit = function(event) {
 
 var statementKeyUp = function(event) {
     var orig = event.originalEvent;
+    var key = event.charCode || event.keyCode || 0;
+
+    if(orig.shiftKey) {
+        // Support TTY-style Shift-PageUp and Shift-PageDown functionality.
+        if     (key == 33)
+            scroll('up');
+        else if(key == 34)
+            scroll('down');
+    }
+
     if(orig.shiftKey || orig.altKey || orig.metaKey || orig.ctrlKey) {
         console.debug('Ignoring keypress with a modifier key');
         return;
     }
 
-    var key = event.charCode || event.keyCode || 0;
-    switch(key) {
-        case 38:
-            moveHistory(-1);
-            break;
-        case 40:
-            moveHistory(1);
-            break;
-    }
+    if     (key == 38)
+        moveHistory(-1);
+    else if(key == 40)
+        moveHistory(1);
+};
+
+var scroll = function(dir) {
+    //console.debug('Scrolling: %s', dir);
+    var area = $('#console_area').get(0);
+    var scrollDelta = 236;  // This is what it happens to be on my FF3/Fedora system.
+
+    if(area.offsetHeight > area.scrollHeight)
+        // The text in the window is too small for scrolling to have happened yet.
+        return;
+
+    if(dir == 'up')
+        scrollDelta *= -1;
+
+    var newHeight = area.scrollTop + scrollDelta;
+    if(newHeight < 0)
+        newHeight = 0;
+    if(newHeight > area.scrollHeight)
+        newHeight = area.scrollHeight;
+
+    area.scrollTop = newHeight;
 };
 
 var fetchBanner = function() {
