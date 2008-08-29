@@ -8,3 +8,8 @@ execute "from autoexec import *".  So you may place anything in here which you f
 #from google.appengine.ext import db
 #from google.appengine.api import users
 #import logging
+
+# This allows you to run help(...) just like the standard console has.
+import site
+help = site._Helper()
+del site
