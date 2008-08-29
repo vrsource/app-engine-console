@@ -1,23 +1,4 @@
 InterpreterManager.prototype.initialize = function () {
-    var interpreter = getElement("interpreter_text");
-    if(interpreter != null)
-        interpreter.focus();
-
-    this.lines = [];
-    this.history = [];
-    this.currentHistory = "";
-    this.historyPos = -1;
-    this.blockingOn = null;
-    if (typeof(this.doEval) == "undefined") {
-        // detect broken eval, warn at some point if a namespace ever gets used
-        this.doEval = function () {
-            return eval(arguments[0]);
-        }
-    }
-
-    window.help = this.help;
-    this.help.NAME = 'type help(func) for help on a MochiKit function';
-
     if(getElement('setting_teamwork') != null) {
         connect('setting_teamwork', 'onchange', this.setTeamwork);
 

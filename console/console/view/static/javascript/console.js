@@ -36,6 +36,10 @@ var main = function() {
     $('#console_statement').keyup(statementKeyUp);
 
     fetchBanner();
+
+    var input = $('#console_statement').get(0);
+    if(input != null)
+        input.focus();
 };
 
 var statementSubmit = function(event) {
