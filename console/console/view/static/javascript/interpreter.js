@@ -173,36 +173,6 @@ InterpreterManager.prototype.blockOn = function (d) {
     d.addCallbacks(this.showResult, this.showError);
 };
 
-InterpreterManager.prototype.showError = function (e) {
-    if (typeof(e) != "object") {
-        e = new Error(e);
-    }
-    appendChildNodes("interpreter_output",
-        SPAN({"class": "error"}, "Error:"),
-        TABLE({"class": "error"},
-            THEAD({"class": "invisible"}, TD({"colspan": 2})),
-            TFOOT({"class": "invisible"}, TD({"colspan": 2})),
-            TBODY(null,
-                map(function (kv) {
-                    var v = kv[1];
-                    if (typeof(v) == "function") {
-                        return;
-                    }
-                    if (typeof(v) == "object") {
-                        v = repr(v);
-                    }
-                    return TR(null,
-                        TD({"class": "error"}, kv[0]),
-                        TD({"class": "data"}, v)
-                    );
-                }, sorted(items(e)))
-            )
-        )
-    );
-    window.last_exc = e;
-    this.doScroll();
-};
-
 EvalFunctions = {
     evalWith: function () {
         with (arguments[1] || window) { return eval(arguments[0]); };
@@ -237,27 +207,11 @@ InterpreterManager.prototype.doSubmit = function () {
     var elem = getElement("interpreter_text");
     var code = elem.value;
 
-    this.lines.push(code);
-    this.history.push(code);
-    this.historyPos = -1;
-    this.currentHistory = "";
-    if (isContinuation) {
-        return;
-    }
-    var allCode = this.lines.join("\n");
-    this.lines = [];
     this.runCode(allCode, id);
-    return;
-};
 
-InterpreterManager.prototype.runCode = function (allCode, id) {
     var consoleWindow = this;
 
     try {
-        var highlight = 1;
-        if(getElement('setting_highlight').value != 'Highlighting')
-            highlight = 0;
-
         var values = {
             'id'       : id,
             'session'  : getElement('setting_session').value,

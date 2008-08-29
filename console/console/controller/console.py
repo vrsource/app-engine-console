@@ -124,8 +124,7 @@ class Statement(webapp.RequestHandler):
                 else:
                     raise nologin             # Unlogged-in user not allowed in development mode
 
-    def get(self):
-        id   = self.request.get('id')
+    def post(self):
         code = self.request.get('code')
         session_key = self.request.get('session')
         output_templating = False
@@ -220,7 +219,6 @@ class Statement(webapp.RequestHandler):
             })
 
         response = {
-            'id' : id,
             'in' : code,
             'out': output,
             'result': result,

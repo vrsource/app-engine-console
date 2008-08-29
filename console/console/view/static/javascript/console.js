@@ -18,6 +18,12 @@
 
 //(function() {
 
+var hist = {
+    'buffer'  : [],
+    'position': -1,
+    'pending' : ''
+};
+
 // Processing begins here.
 var main = function() {
     console.debug('Starting');
@@ -38,17 +44,76 @@ var statementSubmit = function(event) {
         }
 
         var id = 'statement_' + uid();
-        $('#console_output').append(
-            $('<div>')
-                .attr('id', id)
-                .addClass('code').addClass('pygments')
-                .append(
-                    $('<span>')
-                        .addClass('code')
-                        .append(statement))
-        ).append('<br/>');
+        var statementContainer = $('<div>')
+            .addClass('code')
+            .addClass('pygments').append(
+                // This is a temporary representation of the code.  When the server replies,
+                // it will re-send the code that it processed (usually marked up with syntax
+                // highlighting), upon which we will replace this with the server's version.
+                $('<span>')
+                    .addClass('code')
+                    .append(statement)
+            );
+
+        $('#console_output').append(statementContainer).append('<br />');
 
         input.val('');
+
+        // Bring the history up to date.
+        hist.buffer.push(statement);
+        hist.position = -1;
+        hist.pending  = '';
+
+        // POST the statement to the servre.
+        var highlight = ( $('#setting_highlight').val() == 'Highlighting' )
+            ? 1
+            : 0;
+
+        var values = {
+            'session'  : $('#setting_session').val(),
+            'highlight': highlight,
+            'code'     : statement
+        };
+
+        var returnedStatement = function(response, textStatus) {
+            // Handle the response returned from Python on the server.
+            switch(textStatus) {
+                case 'timeout':
+                case 'error':
+                case 'notmodified':
+                case 'parseerror':
+                    console.error('Statement error: %s; response=%s', textStatus, response);
+                    return;
+                    break;
+            }
+
+            // Replace the old temporarary code with the server's version.
+            statementContainer.html(response.in);
+
+            // Append the server output.
+            if(response.out && response.out.length) {
+                if(highlight)
+                    $('#console_output').append(
+                        $('<div>')
+                            .addClass('pygments')
+                            .addClass('data')
+                            .append(response.out)
+                    );
+                else {
+                    $('#console_output').append(
+                        $('<span>')
+                            .addClass('data')
+                            .append(response.out)
+                    ).append('<br/>');
+                }
+
+                scrollOutput();
+            }
+
+            showPrompt();
+        };
+
+        $.post('/console/statement', values, returnedStatement, 'json');
 
         scrollOutput();
     }
@@ -73,6 +138,10 @@ var statementKeyUp = function(event) {
             moveHistory(1);
             break;
     }
+};
+
+var showPrompt = function() {
+    console.debug('TODO: show prompt');
 };
 
 var cls = function() {
