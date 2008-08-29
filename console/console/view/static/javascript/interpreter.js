@@ -250,18 +250,6 @@ window.writeln = function () {
     interpreterManager.doScroll();
 };
 
-window.showPrompt = function(continuing) {
-    var promptStr = window.ps1;
-    if(continuing)
-        promptStr = window.ps2;
-
-    appendChildNodes("interpreter_output",
-        SPAN({"class": "code"}, promptStr)
-    );
-
-    interpreterManager.doScroll();
-};
-
 window.clear = function () {
     replaceChildNodes("interpreter_output");
     getElement("interpreter_area").scrollTop = 0;

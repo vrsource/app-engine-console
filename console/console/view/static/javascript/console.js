@@ -18,6 +18,9 @@
 
 //(function() {
 
+var ps1 = '>>> ';
+var ps2 = '... ';
+
 var hist = {
     'buffer'  : [],
     'position': -1,
@@ -113,7 +116,7 @@ var statementSubmit = function(event) {
                 scrollOutput();
             }
 
-            showPrompt();
+            showPrompt(response.result);
         };
 
         $.post('/console/statement', values, returnedStatement, 'json');
@@ -162,8 +165,13 @@ var fetchBanner = function() {
     $.get('/console/banner', {}, gotBanner, 'json');
 };
 
-var showPrompt = function() {
-    console.debug('TODO: show prompt');
+var showPrompt = function(continuing) {
+    var promptStr = continuing ? ps2 : ps1;
+    $('#console_output').append(
+        $('<span>').addClass('code').append(promptStr)
+    );
+
+    scrollOutput();
 };
 
 var cls = function() {
