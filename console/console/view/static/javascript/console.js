@@ -20,8 +20,7 @@
 
 //(function() {
 
-var ps1 = '>>> ';
-var ps2 = '... ';
+var promptStr = '>>> ';
 
 var hist = {
     'buffer'  : [],
@@ -194,12 +193,9 @@ var fetchBanner = function() {
 };
 
 var showPrompt = function(continuing) {
-    var promptStr = continuing ? ps2 : ps1;
     $('#prompt').html(
         $('<span>').addClass('prompt').append(promptStr)
     );
-
-    scrollOutput();
 };
 
 var cls = function() {
