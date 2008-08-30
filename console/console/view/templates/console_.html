@@ -22,7 +22,7 @@
 
 {% block body %}
     <div id="console_interface">
-        <form id="console_form" autocomplete="off">
+        <form id="console_form" action="/console/statement">
             <div class="issue-list">
                 <div id="console_area">
                     <div id="console_output"></div>
@@ -30,7 +30,7 @@
             </div>
 
             <div id="oneline" class="promptBox">
-                <input id="console_statement" name="input_text" type="text" class="textbox" />
+                <input id="console_statement" name="input_text" type="text" class="textbox">
             </div>
         </form>
     </div>

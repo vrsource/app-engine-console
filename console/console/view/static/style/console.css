@@ -29,6 +29,25 @@ form#console_form {
     width: 100%;
 }
 
+div.links {
+    float: right;
+}
+
+div.mainmenu {
+    clear: both;
+    padding-top: 1em;
+}
+
+div.badge {
+    float: left;
+    margin-top: 1em;
+    margin-right: 2em;
+}
+
+div.badge img {
+    border-width: 0;
+}
+
 div#talkinator {
     float:right;
     padding-right: 5px;

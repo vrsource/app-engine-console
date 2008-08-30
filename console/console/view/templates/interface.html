@@ -21,21 +21,21 @@ along with App Engine Console; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -->
 <head>
+  <link rel="icon" href="/favicon.ico">
+  <link type="text/css" rel="stylesheet" href="/console/static/style/google.css">
+  <link type="text/css" rel="stylesheet" href="/console/static/style/console.css">
+  <script type="text/javascript" src="/console/static/javascript/jquery-1.2.6.min.js"></script>
+  <script type="text/javascript" src="/console/static/javascript/console.js"></script>
   <title>
     {% if is_dev %}
       [DEV] -
     {% endif %}
     {{app}}
   </title>
-  <link rel="icon" href="/favicon.ico" />
-  <link type="text/css" rel="stylesheet" href="/console/static/style/google.css" />
-  <link type="text/css" rel="stylesheet" href="/console/static/style/console.css" />
-  <script type="text/javascript" src="/console/static/javascript/jquery-1.2.6.min.js"></script>
-  <script type="text/javascript" src="/console/static/javascript/console.js"></script>
 </head>
 <body>
 
-<div align="right">
+<div>
     <div style="float:left; color:green; font-weight:bold">
         {{app|capfirst}} {{version}}
         {% if is_dev %}
@@ -43,27 +43,29 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         {% endif %}
     </div>
 
-    {% if user %}
-        <b>{{email}} ({{user}})</b>
-        |
-    {% endif %}
+    <div class="links">
+        {% if user %}
+            <b>{{email}} ({{user}})</b>
+            |
+        {% endif %}
 
-    {% if is_dev %}
-        <a class="novisit" target="_blank" href="/_ah/admin">Admin</a>
-        |
-        <a class="novisit" href="http://{{version}}.{{app}}.appspot.com/" target="_blank">Production</a>
-        |
-    {% endif %}
+        {% if is_dev %}
+            <a class="novisit" href="/_ah/admin">Admin</a>
+            |
+            <a class="novisit" href="http://{{version}}.{{app}}.appspot.com/">Production</a>
+            |
+        {% endif %}
 
-    <a class="novisit" href="http://appengine.google.com/dashboard?app_id={{app}}" target="_blank">Dashboard</a>
-    |
-    <a class="novisit" href="http://www.proven-corporation.com/contact/">Contact Me</a>
-    |
-    {% if user %}
-        <a class="novisit" href="{{log_out}}">Log out</a>
-    {% else %}
-        <a class="novisit" href="{{log_in}}">Log in</a>
-    {% endif %}
+        <a class="novisit" href="http://appengine.google.com/dashboard?app_id={{app}}">Dashboard</a>
+        |
+        <a class="novisit" href="http://www.proven-corporation.com/contact/">Contact Me</a>
+        |
+        {% if user %}
+            <a class="novisit" href="{{log_out}}">Log out</a>
+        {% else %}
+            <a class="novisit" href="{{log_in}}">Log in</a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="mainmenu">
@@ -100,7 +102,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             {% endif %}
 
             {% ifequal setting.type 'hidden' %}
-                <input type="hidden" id="setting_{{setting.id}}" value="{{setting.value}}" />
+                <input type="hidden" id="setting_{{setting.id}}" value="{{setting.value}}">
             {% else %}
                 <select id="setting_{{setting.id}}">
                     {% for option in setting.options %}
