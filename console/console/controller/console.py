@@ -124,7 +124,7 @@ class Statement(webapp.RequestHandler):
                 if user:
                     pass                    # Logged-in user allowed, even in development mode.
                 else:
-                    raise nologin             # Unlogged-in user not allowed in development mode
+                    raise nologin           # Unlogged-in user not allowed in development mode
 
     def post(self):
         code = self.request.get('code')
