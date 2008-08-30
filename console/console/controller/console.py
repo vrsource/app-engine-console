@@ -294,9 +294,7 @@ class Page(webapp.RequestHandler):
         self.values['controller'] = self.page.capitalize()
 
         self.values['pages']    = [ {'name':'Console'   , 'href':'/console/'},
-                                    {'name':'Data'      , 'href':'/console/data/'},
                                     {'name':'Dashboard' , 'href':'/console/dashboard/'},
-                                    #{'name':'Dashboard' , 'href':'http://appengine.google.com/dashboard?app_id=%s' % self.appID},
                                     {'name':'Help'      , 'href':'/console/help/'},
                                   ]
 
@@ -351,11 +349,13 @@ class Console(Page):
             {'id':'teamwork' , 'options': ['Flying Solo' , 'Pastebin', 'Chatting']},
         ]
 
-class Data(Page):
-    pass
-
 class Dashboard(Page):
-    pass
+    def do_get(self):
+        if is_dev():
+            self.values['dashboard_url'] = '/_ah/admin'
+        else:
+            self.values['dashboard_url'] = 'http://appengine.google.com/datastore/explorer?&app_id=%s&version_id=%s' % (self.appID, self.appVersion)
+                                    #{'name':'Dashboard' , 'href':'http://appengine.google.com/dashboard?app_id=%s' % self.appID},
 
 class Help(Page):
     subpages = ['usage', 'about']
@@ -365,7 +365,7 @@ class Root(Page):
         self.redirect('/console/')
         self.done = True
 
-__all__ = ['Console', 'Data', 'Dashboard', 'Help', 'Statement', 'Banner', 'Root']
+__all__ = ['Console', 'Dashboard', 'Help', 'Statement', 'Banner', 'Root']
 
 if __name__ == "__main__":
     logging.error('I should be running unit tests')
