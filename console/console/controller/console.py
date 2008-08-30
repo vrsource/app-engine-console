@@ -145,9 +145,9 @@ class Statement(webapp.RequestHandler):
             logging.info('Console error %s for: %s' % (exc_type, username))
 
             stack = (('<stdin>', 1, '<module>', code),)
-            output = ('Traceback (most recent call last):\n' +
-                      ''.join(traceback.format_list(stack)) +
-                      ''.join(traceback.format_exception_only(exc_type, exc_value)))
+            err = ('Traceback (most recent call last):\n' +
+                   ''.join(traceback.format_list(stack)) +
+                   ''.join(traceback.format_exception_only(exc_type, exc_value)))
             result = False
             output_templating = True
         else:
