@@ -121,7 +121,7 @@ input.textbox:focus { background-color: #FFFEE3; }
 .pygments .hll { background-color: #ffffcc }
 .pygments { background: #f3f3f3; }
 .pygments .c { color: #408080; font-style: italic } /* Comment */
-.pygments .err { border: 1px solid #FF0000 } /* Error */
+.pygments .err { background-color: #D2413A; } /* Error */
 .pygments .k { color: #008000; font-weight: bold } /* Keyword */
 .pygments .o { color: #666666 } /* Operator */
 .pygments .cm { color: #408080; font-style: italic } /* Comment.Multiline */
