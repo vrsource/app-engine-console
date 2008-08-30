@@ -34,6 +34,10 @@ form#console_form {
     font-size: 125%;
 }
 
+.helpcontent p {
+    margin-top: 0.5em;
+}
+
 div.links {
     float: right;
 }
