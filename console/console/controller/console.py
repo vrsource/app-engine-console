@@ -259,7 +259,7 @@ class Statement(webapp.RequestHandler):
 
 class Banner(webapp.RequestHandler):
     def get(self):
-        logging.debug('Fetching banner')
+        logging.debug('Fetching banner for: %s' % username())
 
         copyright = 'Type "help", "copyright", "credits" or "license" for more information.'
         banner = "Python %s on %s\n%s\n(%s)" % (sys.version, sys.platform, copyright, os.environ['SERVER_SOFTWARE'])
