@@ -378,7 +378,7 @@ class Help(Page):
 
 class Root(Page):
     def do_get(self):
-        self.redirect('/console/')
+        self.redirect('/console/help/about')
         self.done = True
 
 __all__ = ['Console', 'Dashboard', 'Help', 'Statement', 'Banner', 'Root']

@@ -21,4 +21,3 @@ Features
 * Special behavior for the console site itself:
   * Allow any user who is logged in
   * A simple form to submit feedback
-  * / should redirect to /console/help/about
