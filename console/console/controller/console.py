@@ -56,7 +56,7 @@ require_login_during_development = False
 # In production mode, only administrators may use the console. However, if you
 # really want to allow any regular logged-in user to use the console, you can
 # set this variable to True.
-allow_any_user = True
+allow_any_user = False
 
 # Set this to True to enable automatic HTML links to the Python documentation for
 # exceptions, types, modules, etc.
