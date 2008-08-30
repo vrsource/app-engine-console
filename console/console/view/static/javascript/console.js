@@ -292,11 +292,12 @@ var setTeamwork = function(event) {
 
     /* Pastebin stuff */
     var showPastebin = function() {
+        var url = $('#setting_pastebin').val();
         pastebin.css('display', 'block');
         pastebin.html(
             '<iframe width="100%" height="400" marginwidth="0" marginheight="0" scrolling="yes"' +
             '       style="border: 2px solid #93b7fa" frameborder="0"'                          +
-            '       src="http://pastebin.com/"> '                                               +
+            '       src="' + url + '"> '                                                         +
             '</iframe>');
     };
 

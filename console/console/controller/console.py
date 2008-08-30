@@ -347,16 +347,23 @@ class Console(Page):
                 engine.unpicklables = [db.Text(line) for line in INITIAL_UNPICKLABLES]
                 session_key = engine.put()
 
+        if config.pastebin_subdomain:
+            pastebin = 'http://%s.pastebin.com/' % config.pastebin_subdomain
+        else:
+            pastebin = 'http://pastebin.com'
+
         room = '%s-appengine-console' % self.appID
 
         self.values['session']  = str(session_key)
         self.values['settings'] = [
             {'id':'session'  , 'value':session_key       , 'type':'hidden'},
             {'id':'room'     , 'value':room              , 'type':'hidden'},
+            {'id':'pastebin' , 'value':pastebin          , 'type':'hidden'},
 
             {'id':'highlight', 'options': ['Highlighting', 'No highlighting']},
             {'id':'teamwork' , 'options': ['Flying Solo' , 'Pastebin', 'Chatting']},
         ]
+
 
 class Dashboard(Page):
     def do_get(self):

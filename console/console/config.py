@@ -19,6 +19,9 @@ allow_any_user = False
 # exceptions, types, modules, etc.
 python_doc_linking = True
 
+# Set this to a string if you wish to use a subdomain of pastebin.com.
+pastebin_subdomain = ''
+
 # The location of the newer (Sphinx) Python documentation.  If you have a local
 # copy, you can set this to use your own version instead.
 PYTHON_DOC = 'http://docs.python.org/dev'
