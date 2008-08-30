@@ -87,6 +87,15 @@ input.textbox {
     font-size: .60em;
 }
 
+#console_output span {
+    /* white-space: -moz-pre-wrap; */ /* Mozilla */
+    /* white-space: -o-pre-wrap; */ /* Opera 7 */
+    white-space: normal; /* CSS 2.1 */
+    /* white-space: pre-line; */ /* CSS 3 (and 2.1 as well, actually) */
+    /* word-wrap: break-word; */ /* IE */
+    /* wrap-option: emergency; */ /* CSS 3 */
+}
+
 #console_output div.statement,
 #console_output div.statement pre {
     margin: 0;
