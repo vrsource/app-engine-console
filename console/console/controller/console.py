@@ -80,6 +80,32 @@ def is_dev():
 def is_production():
     return (not is_dev())
 
+def confirm_permission():
+    """Raises an exception if the user does not have permission to execute a statement"""
+    user = users.get_current_user()
+    nologin = NotLoggedInError('Hello! Please $login_link to use this console')
+    noadmin = NotAdminError('Please $logout_link, then log in as an administrator')
+
+    if is_production():
+        if not user:
+            raise nologin
+        else:
+            if allow_any_user:
+                pass                    # Do what the man says.
+            else:
+                if users.is_current_user_admin():
+                    pass                # Grant access to the admin.
+                else:
+                    raise noadmin       # Administrator access required in production mode
+    else:
+        if not require_login_during_development:
+            pass                        # Unrestricted access during development mode
+        else:
+            if user:
+                pass                    # Logged-in user allowed, even in development mode.
+            else:
+                raise nologin           # Unlogged-in user not allowed in development mode
+
 
 class ConsoleError(Exception):
     """General error in console"""
@@ -100,32 +126,6 @@ class Statement(webapp.RequestHandler):
     def write(self, *args, **kw):
         self.response.out.write(*args, **kw)
 
-    def confirm_permission(self):
-        """Raises an exception if the user does not have permission to execute a statement"""
-        user = users.get_current_user()
-        nologin = NotLoggedInError('Hello! Please $login_link to use this console')
-        noadmin = NotAdminError('Please $logout_link, then log in as an administrator')
-
-        if is_production():
-            if not user:
-                raise nologin
-            else:
-                if allow_any_user:
-                    pass                    # Do what the man says.
-                else:
-                    if users.is_current_user_admin():
-                        pass                # Grant access to the admin.
-                    else:
-                        raise noadmin       # Administrator access required in production mode
-        else:
-            if not require_login_during_development:
-                pass                        # Unrestricted access during development mode
-            else:
-                if user:
-                    pass                    # Logged-in user allowed, even in development mode.
-                else:
-                    raise nologin           # Unlogged-in user not allowed in development mode
-
     def post(self):
         code = self.request.get('code')
         session_key = self.request.get('session')
@@ -139,7 +139,7 @@ class Statement(webapp.RequestHandler):
             username = '[Unknown User]'
 
         try:
-            self.confirm_permission()
+            confirm_permission()
         except ConsoleError:
             exc_type, exc_value, tb = sys.exc_info()
             logging.info('Console error %s for: %s' % (exc_type, username))
