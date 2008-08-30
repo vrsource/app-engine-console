@@ -37,9 +37,11 @@ var main = function() {
     $('#console_form').submit(statementSubmit);
     $('#console_statement').keyup(statementKeyUp);
     $('#setting_teamwork').change(setTeamwork);
+    $('#setting_dash_type').change(setDashboard);
 
     // Some browsers cache the <select> option, so do the teamwork thing now.
     setTeamwork();
+    setDashboard();
 
     fetchBanner();
 
@@ -305,6 +307,25 @@ var setTeamwork = function(event) {
         hidePastebin();
         hideTalkinator();
     }
+};
+
+var setDashboard = function(event) {
+    console.debug('doing dashboard');
+    /* Handle the dashboard iframe */
+    var choice = $('#setting_dash_type').val();
+    if(choice == null)
+        return;
+
+    var url;
+    if(choice == 'Development')
+        url = $('#setting_dash_url_dev').val();
+    else
+        url = $('#setting_dash_url_pro').val();
+
+    $('#dashboard').html(
+            '<iframe width="100%" height="540" marginwidth="0" marginheight="0" scrolling="yes"' +
+            '       frameborder="0"'                          +
+            '       src="' + url + '"> </iframe>');
 };
 
 /* Generate IDs unique for the current page load. It uses a closure to maintain state. */

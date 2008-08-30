@@ -352,10 +352,17 @@ class Console(Page):
 class Dashboard(Page):
     def do_get(self):
         if is_dev():
-            self.values['dashboard_url'] = '/_ah/admin'
+            options = ['Development', 'Production']
+            #self.values['dashboard_url'] = '/_ah/admin'
+            #self.values['settings'] = [ {'type':'link', 'name':'Production Dashboard',
         else:
-            self.values['dashboard_url'] = 'http://appengine.google.com/datastore/explorer?&app_id=%s&version_id=%s' % (self.appID, self.appVersion)
-                                    #{'name':'Dashboard' , 'href':'http://appengine.google.com/dashboard?app_id=%s' % self.appID},
+            options = ['Production', 'Development']
+
+        self.values['settings'] = [
+            {'id':'dash_type', 'options':options},
+            {'type':'hidden', 'id':'dash_url_pro', 'value':'http://appengine.google.com/dashboard?app_id=%s' % self.appID },
+            {'type':'hidden', 'id':'dash_url_dev', 'value':'/_ah/admin'},
+        ]
 
 class Help(Page):
     subpages = ['usage', 'about']
