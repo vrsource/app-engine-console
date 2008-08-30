@@ -107,7 +107,16 @@ input.textbox {
     margin: 0;
 }
 
+#prompt {
+    float: left;
+    width: 2em;
+    font-size: 120%;
+    padding-top: 2px;
+    margin-top: 0.2em;
+}
+
 div.promptBox {
+    margin-left: 3em;
     padding-right: 2px;
 }
 

@@ -195,7 +195,7 @@ var fetchBanner = function() {
 
 var showPrompt = function(continuing) {
     var promptStr = continuing ? ps2 : ps1;
-    $('#console_output').append(
+    $('#prompt').html(
         $('<span>').addClass('prompt').append(promptStr)
     );
 
