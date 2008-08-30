@@ -33,23 +33,25 @@
         <li><strong>Browser-based console</strong>
             <ul>
                 <li>Just like running Python interactively from the command line</li>
+                <li>Direct access to your application's run-time code and data</li>
                 <li>Optional syntax highlighting</li>
                 <li>Exceptions, modules, and types link to their own documentation on python.org</li>
             </ul>
         </li>
         <li><strong>Convenience</strong>
             <ul>
+                <li>Automatically imports an <tt>autoexec.py</tt> module to which you can add
+                    your own code, then run it from the console</li>
                 <li>Easy access to the datastore viewer and application dashboard</li>
                 <li>Pastebin integration</li>
                 <li>Instant messaging between team members</li>
-                <li>The console automatically imports an <tt>autoexec.py</tt> module, to which you may add your own useful functions</li>
             </ul>
         </li>
         <li><strong>Security</strong>
             <ul>
                 <li>Only site administrators may use the console when in production</li>
-                <li>Optionally return HTTP 404 for non-authorized users (hiding the console from public view)</li>
-                <li>Logs the email address, statements, and output of all commands from all users</li>
+                <li>Optionally return HTTP 404 to non-authorized users ("cloaked mode")</li>
+                <li>Logs the email address, statements, and output of all activity</li>
             </ul>
         </li>
     </ul>
@@ -58,9 +60,9 @@
         App Engine Console is useful for the following tasks:
     </p>
     <ul>
-        <li>Testing ideas before editing any code</li>
+        <li>Testing ideas before making changes to code</li>
         <li>Debugging an App Engine application</li>
-        <li>Sophisticated datastore maintenance and manipulation</li>
+        <li>Sophisticated datastore maintenance and manipulation (in development and production environments)</li>
     </ul>
 
     <h3>Try It</h3>
@@ -81,9 +83,9 @@
 
     <h3>Credits</h3>
     <p>
-        App Engine Console is developed by Jason Smith.
+        App Engine Console is developed by Jason Smith
         at <a href="http://www.proven-corporation.com/">Proven Corporation</a>.
         Please <a href="http://www.proven-corporation.com/contact">contact me</a>
-        for questions, comments, or suggestions.  Thank you.
+        with questions, comments, or suggestions.  Thank you.
     </p>
 {% endblock %}
