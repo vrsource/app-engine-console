@@ -17,6 +17,7 @@
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import os
 import sys
 import new
 import code
@@ -72,6 +73,7 @@ class AppEngineConsole(ShellSession):
         user = users.get_current_user()
         if not user:
             user = '[Unknown User]'
+        user = '%s (%s)' % (user, os.environ['REMOTE_ADDR'])
 
         source = self.getPending() + source
         logging.info('Compiling for: %s >>> %s' % (user, source))

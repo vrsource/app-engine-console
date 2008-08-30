@@ -110,7 +110,7 @@ def username():
     name = users.get_current_user()
     if not name:
         name = '[Unknown User]'
-    return name
+    return '%s (%s)' % (name, os.environ['REMOTE_ADDR'])
 
 
 class ConsoleError(Exception):
