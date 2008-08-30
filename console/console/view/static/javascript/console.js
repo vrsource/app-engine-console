@@ -1,5 +1,7 @@
 /* App Engine Console client-side functionality
  *
+ * Copyright 2008 Proven Corporation Co., Ltd., Thailand
+ *
  * This file is part of App Engine Console.
  *
  * App Engine Console is free software; you can redistribute it and/or modify
