@@ -294,7 +294,7 @@ class Page(webapp.RequestHandler):
         self.values['controller'] = self.page.capitalize()
 
         self.values['pages']    = [ {'name':'Console'   , 'href':'/console/'},
-                                    {'name':'Data Store', 'href':'/console/datastore/'},
+                                    {'name':'Data'      , 'href':'/console/data/'},
                                     {'name':'Dashboard' , 'href':'/console/dashboard/'},
                                     #{'name':'Dashboard' , 'href':'http://appengine.google.com/dashboard?app_id=%s' % self.appID},
                                     {'name':'Help'      , 'href':'/console/help/'},
