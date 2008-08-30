@@ -106,6 +106,12 @@ def confirm_permission():
             else:
                 raise nologin           # Unlogged-in user not allowed in development mode
 
+def username():
+    name = users.get_current_user()
+    if not name:
+        name = '[Unknown User]'
+    return name
+
 
 class ConsoleError(Exception):
     """General error in console"""
@@ -132,16 +138,12 @@ class Statement(webapp.RequestHandler):
         output_templating = False
         out, err = '', ''
 
-        username = users.get_current_user()
-        if not username:
-            username = '[Unknown User]'
-
         try:
             confirm_permission()
         except ConsoleError:
             engine = model.AppEngineConsole()       # Just make a temporary one so the code below works.
             exc_type, exc_value, tb = sys.exc_info()
-            logging.info('Console error %s for: %s' % (exc_type, username))
+            logging.info('Console error %s for: %s' % (exc_type, username()))
 
             stack = (('<stdin>', 1, '<module>', code),)
             err = ('Traceback (most recent call last):\n' +
