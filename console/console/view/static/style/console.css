@@ -107,6 +107,10 @@ input.textbox {
     margin: 0;
 }
 
+#console_output span.statement.plain {
+    white-space: pre;
+}
+
 #prompt {
     float: left;
     width: 2em;

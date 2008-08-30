@@ -72,7 +72,7 @@ var statementSubmit = function(event) {
         // This is a temporary representation of the code.  When the server replies,
         // it will re-send the code that it processed (possibly marked up with syntax
         // highlighting), and we will replace the content with the server's version.
-        var statementContainer = $('<span>').addClass('statement').append(statement);
+        var statementContainer = $('<span>').addClass('statement').addClass('plain').append(statement);
         $('#console_output').append(statementContainer);
 
         // Bring the history up to date.
@@ -106,7 +106,7 @@ var statementSubmit = function(event) {
             // Replace the old temporarary code with the server's version.
             statementContainer.html(response.in);
             if(highlight)
-                statementContainer.addClass('pygments');
+                statementContainer.addClass('pygments').removeClass('plain');
 
             // Append the server output.
             var output;
