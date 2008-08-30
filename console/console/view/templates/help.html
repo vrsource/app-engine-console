@@ -21,9 +21,11 @@
 {% extends "interface.html" %}
 
 {% block body %}
-    {% block helpcontent %}
-        HELP CONTENTS GOES HERE
-    {% endblock %}
+    <div class="helpcontent">
+        {% block helpcontent %}
+            HELP CONTENTS GOES HERE
+        {% endblock %}
+    </div>
 {% endblock %}
 
 {% block poweredby %}
