@@ -130,6 +130,7 @@ class Statement(webapp.RequestHandler):
         code = self.request.get('code')
         session_key = self.request.get('session')
         output_templating = False
+        out, err = '', ''
 
         engine = model.AppEngineConsole.get(session_key)
 
