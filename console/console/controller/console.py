@@ -273,6 +273,7 @@ class Page(webapp.RequestHandler):
         'templates')
     appID = os.environ['APPLICATION_ID']
     appVersion = os.environ['CURRENT_VERSION_ID']
+    subpages = []
 
     def __init__(self, *args, **kw):
         webapp.RequestHandler.__init__(self, *args, **kw)
@@ -351,16 +352,15 @@ class Console(Page):
         ]
 
 class Data(Page):
-    subpages = []
+    pass
 
 class Dashboard(Page):
-    subpages = []
+    pass
 
 class Help(Page):
     subpages = ['usage', 'about']
 
 class Root(Page):
-    subpages = []
     def do_get(self):
         self.redirect('/console/')
         self.done = True

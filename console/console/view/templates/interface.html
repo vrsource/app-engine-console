@@ -78,17 +78,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 <div class="mainmenu2">
     {% block mainmenu2 %}
-        {% for sub in subpages %}
-            {% ifequal sub subpage %}
-                <a href="/console/{{controller|lower}}/{{sub}}" class="active">{{sub|capfirst}}</a>
-            {% else %}
-                <a href="/console/{{controller|lower}}/{{sub}}">{{sub|capfirst}}</a>
-            {% endifequal %}
+        {% if not subpages %}
+            &nbsp;
+        {% else %}
+            {% for sub in subpages %}
+                {% ifequal sub subpage %}
+                    <a href="/console/{{controller|lower}}/{{sub}}" class="active">{{sub|capfirst}}</a>
+                {% else %}
+                    <a href="/console/{{controller|lower}}/{{sub}}">{{sub|capfirst}}</a>
+                {% endifequal %}
 
-            {% if not forloop.last %}
-                |
-            {% endif %}
-        {% endfor %}
+                {% if not forloop.last %}
+                    |
+                {% endif %}
+            {% endfor %}
+        {% endif %}
     {% endblock %}
 
     {% block settings %}
