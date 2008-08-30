@@ -4,8 +4,6 @@ Bugs
 * Old session data never expires
 * Deleting an unpicklable from the session does not work
 * Put stuff in the Help and About page
-  * What all the settings do
-  * Where to find the code
   * How to integrate it in your own app, maybe with some kind of walkthrough
   * Tested in FF only
 
