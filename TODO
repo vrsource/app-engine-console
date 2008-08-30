@@ -2,7 +2,6 @@ Bugs
 ====
 
 * Deleting an unpicklable from the session does not work
-* Whitespace-only output (e.g. print "   ") doesn't come out right
 * Put stuff in the Help and About page
   * What all the settings do
   * Where to find the code

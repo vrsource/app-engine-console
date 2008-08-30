@@ -107,7 +107,8 @@ input.textbox {
     margin: 0;
 }
 
-#console_output .output span {
+#console_output .output span,
+#console_output div.statement pre span {
     white-space: pre;
 }
 
