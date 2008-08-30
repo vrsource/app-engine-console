@@ -20,6 +20,8 @@
 
 //(function() {
 
+var promptType = 'ps1';
+
 var hist = {
     'buffer'  : [],
     'position': -1,
@@ -60,6 +62,12 @@ var statementSubmit = function(event) {
             $('#console_area').get(0).scrollTop = 0;
             return;
         }
+
+        // First put the prompt there so it looks like a standard Python console session.
+        var promptStr = '>>> ';
+        if(promptType == 'ps2')
+            promptStr = '... ';
+        $('#console_output').append($('<span>').addClass('prompt').append(promptStr));
 
         // This is a temporary representation of the code.  When the server replies,
         // it will re-send the code that it processed (possibly marked up with syntax
@@ -192,8 +200,11 @@ var fetchBanner = function() {
 
 var showPrompt = function(continuing) {
     var promptStr = '>>> ';
-    if(continuing)
+    promptType = 'ps1';
+    if(continuing) {
         promptStr = '.&nbsp;.&nbsp;. ';
+        promptType = 'ps2'; // Also set the global so we remember to put it in the output window.
+    }
 
     $('#prompt').html(
         $('<span>').addClass('prompt').append(promptStr)
