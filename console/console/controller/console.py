@@ -132,8 +132,6 @@ class Statement(webapp.RequestHandler):
         output_templating = False
         out, err = '', ''
 
-        engine = model.AppEngineConsole.get(session_key)
-
         username = users.get_current_user()
         if not username:
             username = '[Unknown User]'
@@ -141,6 +139,7 @@ class Statement(webapp.RequestHandler):
         try:
             confirm_permission()
         except ConsoleError:
+            engine = model.AppEngineConsole()       # Just make a temporary one so the code below works.
             exc_type, exc_value, tb = sys.exc_info()
             logging.info('Console error %s for: %s' % (exc_type, username))
 
@@ -152,6 +151,7 @@ class Statement(webapp.RequestHandler):
             output_templating = True
         else:
             # Access granted.
+            engine = model.AppEngineConsole.get(session_key)
             result = engine.runsource(code)
             out = engine.out
             err = engine.err
@@ -330,14 +330,21 @@ class Console(Page):
 
     def do_get(self):
         # Set up the session. TODO: garbage collect old shell sessions
-        session_key = self.request.get('session')
-        if session_key:
-            session = model.AppEngineConsole.get(session_key)
+        try:
+            confirm_permission()
+        except ConsoleError:
+            # No reason to use up space if the statements won't execute anyway
+            session_key = ''
         else:
-            # Create a new session.
-            session = model.AppEngineConsole()
-            session.unpicklables = [db.Text(line) for line in INITIAL_UNPICKLABLES]
-            session_key = session.put()
+            # Access granted.
+            session_key = self.request.get('session')
+            if session_key:
+                engine = model.AppEngineConsole.get(session_key)
+            else:
+                # Create a new session.
+                engine = model.AppEngineConsole()
+                engine.unpicklables = [db.Text(line) for line in INITIAL_UNPICKLABLES]
+                session_key = engine.put()
 
         room = '%s-appengine-console' % self.appID
 
