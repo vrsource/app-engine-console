@@ -39,6 +39,14 @@ from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
 from django.utils                import simplejson
 
+#
+# Configuration settings
+#
+
+# Set this to true if you want to hide the console from non-authorized users
+# by returning HTTP 404 (file not found), instead of the normal behavior.
+hide_from_invalid_users = False
+
 # In production mode (hosted at Google), anonymous users may not use the console.
 # But in development mode, anonymous users may.  If you still want to disallow
 # anonymous users from using the console from the development SDK, set this
@@ -122,7 +130,27 @@ class NotLoggedInError(ConsoleError):
 class NotAdminError(ConsoleError):
     """Admin required"""
 
-class Statement(webapp.RequestHandler):
+class ConsoleHandler(webapp.RequestHandler):
+    """This is a normal webapp request handler, but if the user does not have permission
+    to access the page, it will 404 if configured to do so.
+    """
+
+    def safe_get(self):
+        try:
+            confirm_permission()
+        except ConsoleError:
+            self.error(404)
+        else:
+            return self.real_get()
+
+    def __init__(self, *args, **kw):
+        webapp.RequestHandler.__init__(self, *args, **kw)
+        if hide_from_invalid_users:
+            self.real_get = self.get
+            self.get = self.safe_get
+
+
+class Statement(ConsoleHandler):
     lexer           = pygments.lexers.PythonLexer()
     resultLexer     = pygments.lexers.PythonConsoleLexer()
     inputFormatter  = pygments.formatters.HtmlFormatter(cssclass='statement')
@@ -258,7 +286,7 @@ class Statement(webapp.RequestHandler):
         return output
 
 
-class Banner(webapp.RequestHandler):
+class Banner(ConsoleHandler):
     def get(self):
         logging.debug('Fetching banner for: %s' % username())
 
@@ -268,7 +296,7 @@ class Banner(webapp.RequestHandler):
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.response.out.write(simplejson.dumps({'banner':banner}))
 
-class Page(webapp.RequestHandler):
+class Page(ConsoleHandler):
     """A human-visible "page" that presents itself to a person."""
     templates = os.path.join(
         os.path.dirname(
@@ -280,7 +308,7 @@ class Page(webapp.RequestHandler):
     subpages = []
 
     def __init__(self, *args, **kw):
-        webapp.RequestHandler.__init__(self, *args, **kw)
+        ConsoleHandler.__init__(self, *args, **kw)
 
         myClass = re.search(r"<class '.*\.(.*)'", str(self.__class__)).groups()[0]
         self.page = myClass.lower()

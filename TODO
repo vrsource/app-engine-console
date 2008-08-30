@@ -18,5 +18,3 @@ Features
 * See if IPython is pure-python and if so, maybe use it as the back-end
 * logging integration
 * Perhaps a emacs/readline-style interface (^A, ^E, ^U, ^K) at the prompt
-* Maybe return a 404 in production mode for non-admins, so people can't tell
-  that it is installed
