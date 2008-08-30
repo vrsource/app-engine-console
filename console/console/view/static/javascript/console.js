@@ -104,18 +104,16 @@ var statementSubmit = function(event) {
                 statementContainer.addClass('pygments');
 
             // Append the server output.
-            if(response.out && response.out.length) {
-                var output;
-                if(highlight)
-                    output = $('<div>').addClass('pygments');
-                else
-                    output = $('<pre>');
-                
-                output.addClass('output').append(response.out)
-                $('#console_output').append(output);
+            var output;
+            if(highlight)
+                output = $('<div>').addClass('pygments');
+            else
+                output = $('<pre>');
 
-                scrollOutput();
-            }
+            output.addClass('output').append(response.out)
+            $('#console_output').append(output);
+
+            scrollOutput();
 
             showPrompt(response.result);
         };
