@@ -20,8 +20,6 @@
 
 //(function() {
 
-var promptStr = '>>> ';
-
 var hist = {
     'buffer'  : [],
     'position': -1,
@@ -96,8 +94,6 @@ var statementSubmit = function(event) {
                     return;
                     break;
             }
-
-            promptStr = response.prompt;
 
             // Replace the old temporarary code with the server's version.
             statementContainer.html(response.in);
@@ -195,12 +191,16 @@ var fetchBanner = function() {
 };
 
 var showPrompt = function(continuing) {
+    var promptStr = '>>> ';
+    if(continuing)
+        promptStr = '.&nbsp;.&nbsp;. ';
+
     $('#prompt').html(
         $('<span>').addClass('prompt').append(promptStr)
     );
 
-    var promptSpace = $('#prompt span').width() + 10;
-    $('#oneline').css('margin-left', promptSpace);
+    //var promptSpace = $('#prompt span').width() + 10;
+    //$('#oneline').css('margin-left', promptSpace);
 };
 
 var cls = function() {

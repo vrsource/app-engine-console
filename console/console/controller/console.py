@@ -180,7 +180,6 @@ class Statement(webapp.RequestHandler):
             'in' : code,
             'out': out + err,
             'result': result,
-            'prompt': engine.prompt(),
         }
 
         self.response.headers['Content-Type'] = 'application/x-javascript'

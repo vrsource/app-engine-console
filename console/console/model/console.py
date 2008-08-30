@@ -62,10 +62,6 @@ class AppEngineConsole(ShellSession):
         self.pending_source = pending
         self.put()
 
-    def prompt(self):
-        """Returns the expected prompt string for the current context"""
-        return '>>> '
-
     def runsource(self, source):
         """Runs some source code in the object's context.  The return value will be
         True if the code is valid but incomplete, or False if the code is
