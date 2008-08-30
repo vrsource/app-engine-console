@@ -174,7 +174,7 @@ var scroll = function(dir) {
 var fetchBanner = function() {
     var gotBanner = function(response, textStatus) {
         // Handle the banner from the console.
-        var banner = $('<span>');
+        var banner = $('<pre>');
 
         if(textStatus == 'success')
             banner.addClass('banner').append(response.banner);
@@ -182,7 +182,7 @@ var fetchBanner = function() {
             console.error('Banner error: %s; response=%s', textStatus, response);
             banner.addClass('error').append('(Failed to fetch Python banner)');
         }
-        $('#console_output').append(banner).append('<br />');
+        $('#console_output').append(banner);
 
         showPrompt();
     };

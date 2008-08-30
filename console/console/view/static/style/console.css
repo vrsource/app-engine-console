@@ -98,15 +98,6 @@ input.textbox {
     margin: 0;
 }
 
-#console_output span {
-    white-space: -moz-pre-wrap; /* Mozilla */
-    white-space: -o-pre-wrap; /* Opera 7 */
-    white-space: pre-wrap; /* CSS 2.1 */
-    white-space: pre-line; /* CSS 3 (and 2.1 as well, actually) */
-    word-wrap: break-word; /* IE */
-    wrap-option: emergency; /* CSS 3 */
-}
-
 div.promptBox {
     padding-right: 2px;
 }
@@ -116,7 +107,10 @@ input.textbox:focus { background-color: #FFFEE3; }
 #console_output .statement, #console_output .prompt { color: blue; }
 #console_output .output { color: black; }
 #console_output .error { color: red; }
-#console_output .banner { color: green; }
+#console_output .banner {
+    color: green;
+    margin: 0;
+}
 #console_output .invisible { display: none; }
 
 .pygments * {
