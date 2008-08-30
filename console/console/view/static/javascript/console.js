@@ -97,6 +97,8 @@ var statementSubmit = function(event) {
                     break;
             }
 
+            promptStr = response.prompt;
+
             // Replace the old temporarary code with the server's version.
             statementContainer.html(response.in);
             if(highlight)
@@ -196,6 +198,9 @@ var showPrompt = function(continuing) {
     $('#prompt').html(
         $('<span>').addClass('prompt').append(promptStr)
     );
+
+    var promptSpace = $('#prompt span').width() + 10;
+    $('#oneline').css('margin-left', promptSpace);
 };
 
 var cls = function() {
