@@ -32,43 +32,13 @@ import pygments.lexers
 import pygments.formatters
 
 import model
+import config
 
 from google.appengine.api        import users
 from google.appengine.ext        import db
 from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
 from django.utils                import simplejson
-
-#
-# Configuration settings
-#
-
-# Set this to true if you want to hide the console from non-authorized users
-# by returning HTTP 404 (file not found), instead of the normal behavior.
-hide_from_invalid_users = False
-
-# In production mode (hosted at Google), anonymous users may not use the console.
-# But in development mode, anonymous users may.  If you still want to disallow
-# anonymous users from using the console from the development SDK, set this
-# variable to True.
-require_login_during_development = False
-
-# In production mode, only administrators may use the console. However, if you
-# really want to allow any regular logged-in user to use the console, you can
-# set this variable to True.
-allow_any_user = False
-
-# Set this to True to enable automatic HTML links to the Python documentation for
-# exceptions, types, modules, etc.
-python_doc_linking = True
-
-# The location of the newer (Sphinx) Python documentation.  If you have a local
-# copy, you can set this to use your own version instead.
-PYTHON_DOC = 'http://docs.python.org/dev'
-
-#
-# No more configuration settings below here
-#
 
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
@@ -98,7 +68,7 @@ def confirm_permission():
         if not user:
             raise nologin
         else:
-            if allow_any_user:
+            if config.allow_any_user:
                 pass                    # Do what the man says.
             else:
                 if users.is_current_user_admin():
@@ -106,7 +76,7 @@ def confirm_permission():
                 else:
                     raise noadmin       # Administrator access required in production mode
     else:
-        if not require_login_during_development:
+        if not config.require_login_during_development:
             pass                        # Unrestricted access during development mode
         else:
             if user:
@@ -145,7 +115,7 @@ class ConsoleHandler(webapp.RequestHandler):
 
     def __init__(self, *args, **kw):
         webapp.RequestHandler.__init__(self, *args, **kw)
-        if hide_from_invalid_users:
+        if config.hide_from_invalid_users:
             self.real_get = self.get
             self.get = self.safe_get
 
@@ -223,7 +193,7 @@ class Statement(ConsoleHandler):
         output = pygments.highlight(plain, self.resultLexer, formatter).strip()
 
         # Fancy linking to documented parts of Python.
-        if not python_doc_linking:
+        if not config.python_doc_linking:
             return output
 
         # Otherwise, try to find stuff to link to.
@@ -231,7 +201,7 @@ class Statement(ConsoleHandler):
 
         def doclink(path, name):
             """Return an HTML link to the documentation"""
-            return '<a href="%s%s">%s</a>' % (PYTHON_DOC, path, name)
+            return '<a href="%s%s">%s</a>' % (config.PYTHON_DOC, path, name)
 
         if exc_type in DOCUMENTED_EXCEPTIONS:
             name = exc_type.__name__
