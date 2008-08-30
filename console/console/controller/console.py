@@ -292,9 +292,12 @@ class Page(webapp.RequestHandler):
         self.values['subpages']   = self.subpages
         self.values['controller'] = self.page.capitalize()
 
-        self.values['pages']    = [ {'name':'Console', 'href':'/console/'},
-                                    {'name':'Help'   , 'href':'/console/help/'} ]
-
+        self.values['pages']    = [ {'name':'Console'   , 'href':'/console/'},
+                                    {'name':'Data Store', 'href':'/console/datastore/'},
+                                    {'name':'Dashboard' , 'href':'/console/dashboard/'},
+                                    #{'name':'Dashboard' , 'href':'http://appengine.google.com/dashboard?app_id=%s' % self.appID},
+                                    {'name':'Help'      , 'href':'/console/help/'},
+                                  ]
 
         match = re.search(r'^/console/%s/(.+)$' % self.page, path)
         if match:
@@ -347,6 +350,12 @@ class Console(Page):
             {'id':'teamwork' , 'options': ['Flying Solo' , 'Pastebin', 'Chatting']},
         ]
 
+class Data(Page):
+    subpages = []
+
+class Dashboard(Page):
+    subpages = []
+
 class Help(Page):
     subpages = ['usage', 'about']
 
@@ -356,7 +365,7 @@ class Root(Page):
         self.redirect('/console/')
         self.done = True
 
-__all__ = ['Console', 'Help', 'Statement', 'Banner', 'Root']
+__all__ = ['Console', 'Data', 'Dashboard', 'Help', 'Statement', 'Banner', 'Root']
 
 if __name__ == "__main__":
     logging.error('I should be running unit tests')
