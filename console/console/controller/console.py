@@ -168,12 +168,13 @@ class Statement(webapp.RequestHandler):
             if err:
                 err = self.highlight(err, engine.exc_type)
 
-        # XXX TODO: should make this only happen during highlighting
         if output_templating:
-            err = string.Template(err).safe_substitute({
-                'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
-                'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')),
-            })
+            if highlighting:
+                changes = { 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
+                            'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')) }
+            else:
+                changes = { 'login_link' : 'log in', 'logout_link': 'log out' }
+            err = string.Template(err).safe_substitute(changes)
 
         response = {
             'in' : code,
