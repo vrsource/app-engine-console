@@ -28,7 +28,7 @@ import traceback
 from model.session import ShellSession
 
 from google.appengine.ext import db
-
+from google.appengine.api import users
 
 # Types that can't be pickled.
 UNPICKLABLE_TYPES = (
@@ -69,9 +69,12 @@ class AppEngineConsole(ShellSession):
         """
         self.fresh()
 
-        logging.debug('input source: %s' % source)
+        user = users.get_current_user()
+        if not user:
+            user = '[Unknown User]'
+
         source = self.getPending() + source
-        logging.info('Compiling:\n%s|<--EOF' % source)
+        logging.info('Compiling for: %s >>> %s' % (user, source))
 
         try:
             bytecode = code.compile_command(source, '<string>', 'single')
@@ -79,10 +82,11 @@ class AppEngineConsole(ShellSession):
             self.setPending('')
             self.exc_type = type(e)
             self.err = traceback.format_exc()
+            logging.info('Compile error for: %s\n%s' % (user, self.err.strip()))
             return False    # Code execution completed (the hard way).
 
         if bytecode is None:
-            logging.debug('Code not complete; saving pending source')
+            logging.debug('Saving pending source for: %s' % user)
             self.setPending('%s\n' % source)
             return True     # Compilation still pending; awaiting lines of code.
 
@@ -138,11 +142,12 @@ class AppEngineConsole(ShellSession):
                 self.err = traceback.format_exc()
                 self.exc_type = type(e)
                 self.setPending('')
+                logging.info('Exception for: %s\nout:\n%s\nerr:\n%s' % (user, self.out.strip(), self.err.strip()))
                 return False    # Code execution completed (the hard way).
 
             buf.seek(0)
             self.out = buf.read()
-            logging.debug('Execution result:\n%s' % self.out)
+            logging.info('Execution for: %s: %s' % (user, self.out.strip()))
             self.setPending('')
 
             # Extract the new globals that this statement added.
@@ -155,7 +160,7 @@ class AppEngineConsole(ShellSession):
                 # This statement added an unpicklable global.  Store the statement and
                 # the names of all of the globals it added in the unpicklables.
                 self.add_unpicklable(source, new_globals.keys())
-                logging.info('Storing this statement as an unpicklable.')
+                logging.debug('Storing this statement as an unpicklable.')
             else:
                 # This statement didn't add any unpicklables.  Pickle and store the
                 # new globals back into the datastore.

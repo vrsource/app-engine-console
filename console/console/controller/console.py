@@ -133,10 +133,16 @@ class Statement(webapp.RequestHandler):
 
         engine = model.AppEngineConsole.get(session_key)
 
+        username = users.get_current_user()
+        if not username:
+            username = '[Unknown User]'
+
         try:
             self.confirm_permission()
         except ConsoleError:
             exc_type, exc_value, tb = sys.exc_info()
+            logging.info('Console error %s for: %s' % (exc_type, username))
+
             stack = (('<stdin>', 1, '<module>', code),)
             output = ('Traceback (most recent call last):\n' +
                       ''.join(traceback.format_list(stack)) +
@@ -147,9 +153,7 @@ class Statement(webapp.RequestHandler):
             # Access granted.
             result = engine.runsource(code)
             out = engine.out
-            logging.debug('out :%s:' % out)
             err = engine.err
-            logging.debug('err :%s:' % err)
 
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
@@ -161,6 +165,7 @@ class Statement(webapp.RequestHandler):
             if err:
                 err = self.highlight(err, engine.exc_type)
 
+        # XXX TODO: should make this only happen during highlighting
         if output_templating:
             err = string.Template(err).safe_substitute({
                 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
@@ -175,7 +180,6 @@ class Statement(webapp.RequestHandler):
 
         self.response.headers['Content-Type'] = 'application/x-javascript'
         self.write(simplejson.dumps(response))
-        logging.debug('sending')
 
     def highlight(self, code, exc_type=None):
         """Return syntax-highlighted code using the PythonConsole lexer."""
@@ -244,7 +248,7 @@ class Statement(webapp.RequestHandler):
 
         # Finally, do the replacing if needed.
         if name and link:
-            logging.debug("Replacing '%s' with '%s':\n%s" % (name, link, output))
+            logging.debug("Replacing output:\nold: %s\nnew: %s" % (name, link))
             output = output.replace(name, link)
 
         return output
@@ -306,7 +310,6 @@ class Page(webapp.RequestHandler):
         self.template = os.path.join(self.templates, templateFile)
 
     def write(self):
-        logging.debug("Writing with '%s':\n%s" % (self.template, repr(self.values)))
         self.response.out.write(template.render(self.template, self.values))
 
     def do_get(self):
