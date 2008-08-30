@@ -172,6 +172,9 @@ var scroll = function(dir) {
 };
 
 var fetchBanner = function() {
+    if($('#console_interface').length == 0)
+        return;
+
     var gotBanner = function(response, textStatus) {
         // Handle the banner from the console.
         var banner = $('<pre>');
