@@ -199,7 +199,7 @@ class Statement(webapp.RequestHandler):
 
         def doclink(path, name):
             """Return an HTML link to the documentation"""
-            return '<a target="_blank" href="%s%s">%s</a>' % (PYTHON_DOC, path, name)
+            return '<a href="%s%s">%s</a>' % (PYTHON_DOC, path, name)
 
         if exc_type in DOCUMENTED_EXCEPTIONS:
             name = exc_type.__name__
