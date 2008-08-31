@@ -23,7 +23,7 @@
 {% block helpcontent %}
     <h3>The Console</h3>
     <p>
-        First enable Javascript in your browser, then click on the "Console" tab above.  The large gray
+        First enable Javascript in your browser, then click on the <em>Console</em> tab above.  The large gray
         square on top is the console output, and the small input line on bottom is where you type your text.
         If you see green Python-style banner in the output window, then everything is working.
     </p>
@@ -52,11 +52,28 @@
         <li><strong>Highlighting / No Highlighting</strong>: Change this to enable or disable syntax highlighting.</li>
         <li><strong>Teamwork Settings</strong>:
             <ul>
-                <li><em>Flying Solo</em> (Default): Just the basic interactive Python session</li>
+                <li><em>Flying Solo</em> (default): Just the basic interactive Python session</li>
                 <li><em>Pastebin</em>: Open a session with pastebin.com (shared copy-and-paste) beneath the console</li>
                 <li><em>Chatting</em>: Open a chat and instant messaging window next to the console interface.  (While this
                     can be useful for team members to have a quick conversation, remember that the conversation is not private.)</li>
             </ul>
+        </li>
+    </ul>
+
+    <h3>The Dashboard</h3>
+    <p>
+        If you are like me, and you spend lots of time at the interactive Python console, you want useful links and tools handy.
+        The <em>Dashboard</em> tab is a quick and easy way to manage your application's data.  Essentially, it just embeds the
+        Google-provided web management interface for your application.  The dashboard has two modes of operation:
+    </p>
+    <ul>
+        <li><strong>Development</strong> (default from the SDK): Displays the development console, from which you may
+            browse the local datastore, or use the built-in interactive console (but why would you want to do that?)</li>
+        <li><strong>Production</strong> (default from appspot.com): Displays the appspot dashboard for your
+            application.  From there, you can check your quota, change versions, or perform any other administrative tasks.
+            You could use the datastore data viewer, however for advanced usage, consider
+            <a href="/console/help/integration">integrating App Engine Console in your own application</a> and
+            using it for more advanced datastore manipulation and maintenance.
         </li>
     </ul>
 {% endblock %}
