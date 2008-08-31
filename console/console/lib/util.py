@@ -26,6 +26,10 @@ def is_dev():
 def is_production():
     return (not is_dev())
 
+def app_id():
+    """Return the application ID (i.e. <whatever>.appspot.com)."""
+    return os.environ['APPLICATION_ID']
+
 def is_my_website():
     """Returns True if this code is running at its own web site (con.appspot.com),
     since the functionality changes a little bit there.

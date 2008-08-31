@@ -267,7 +267,7 @@ class Page(ConsoleHandler):
             os.path.dirname(__file__)),
         'view',
         'templates')
-    appID = os.environ['APPLICATION_ID']
+    appID = util.app_id()
     appVersion = os.environ['CURRENT_VERSION_ID']
     subpages = []
 
