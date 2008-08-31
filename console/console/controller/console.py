@@ -62,7 +62,7 @@ def confirm_permission():
         if not user:
             raise nologin
         else:
-            if config.allow_any_user:
+            if config.allow_any_user or util.is_my_website():
                 pass                    # Do what the man says.
             else:
                 if users.is_current_user_admin():

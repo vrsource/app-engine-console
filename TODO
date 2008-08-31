@@ -18,5 +18,4 @@ Features
 * logging integration
 * Perhaps a emacs/readline-style interface (^A, ^E, ^U, ^K) at the prompt
 * Special behavior for the console site itself:
-  * Allow any user who is logged in
   * A simple form to submit feedback
