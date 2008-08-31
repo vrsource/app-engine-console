@@ -373,7 +373,7 @@ class Dashboard(Page):
         ]
 
 class Help(Page):
-    subpages = ['usage', 'about']
+    subpages = ['usage', 'integration', 'about']
 
     resultLexer     = pygments.lexers.PythonConsoleLexer()
     inputFormatter  = pygments.formatters.HtmlFormatter(cssclass='statement')

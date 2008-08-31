@@ -1,0 +1,59 @@
+{# Integration instructions template
+ #
+ # Copyright 2008 Proven Corporation Co., Ltd., Thailand
+ #
+ # This file is part of App Engine Console.
+ #
+ # App Engine Console is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation, version 3 of the License.
+ #
+ # App Engine Console is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License
+ # along with App Engine Console; if not, write to the Free Software
+ # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ #}
+
+{% extends "help.html" %}
+
+{% block helpcontent %}
+    <h3>Integrating With Your Application</h3>
+    <p>
+        App Engine Console's purpose in life is to provide a helpful mechanism to do application development
+        from "within" the runtime.  Once you get a console tied to your own application, you can test ideas,
+        create models and entities in the datastore, track down tough bugs, or do anything else that the
+        engine allows.
+    </p>
+
+    <h4>Prerequisites</h4>
+    <p>
+        First, get a basic app engine application running on your system.  (See the
+        <a href="http://code.google.com/appengine/docs/gettingstarted/">Getting Started guide</a> for instructions.)
+    </p>
+    <p>
+        Next, ensure that your application does not already use the <tt>/console/</tt> path from within the site.
+        To confirm this, start the development SDK normally and go to
+        <a href="http://localhost:8080/console/">http://localhost:8080/console/</a>.
+        You should get a 404 error, which is good because this is where the console interface will live.
+    </p>
+    <p>
+        Finally, ensure that you do not already have a <tt>console</tt> subdirectory in your application code base,
+        because that is where the code will live.
+    </p>
+
+    <h4>Adding The Code</h4>
+    <p>
+        Go to the <a href="{{project}}">App Engine Console project</a> page and download its zip file.
+        Unpack this file in the topmost directory of your project (the one with your <tt>app.yaml</tt> in it).
+        Everything will extract into one nice, clean subdirectory called <tt>console</tt>.
+    </p>
+
+    <h3>Configuration and Security</h3>
+    <p>
+        TODO
+    </p>
+{% endblock %}
