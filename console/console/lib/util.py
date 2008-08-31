@@ -17,9 +17,17 @@
 # along with App Engine Console; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import os
+
+def is_dev():
+    """Return whether the application environment is in development mode."""
+    return os.environ['SERVER_SOFTWARE'].startswith('Dev')
+
+def is_production():
+    return (not is_dev())
+
 def is_my_website():
     """Returns True if this code is running at its own web site (con.appspot.com),
     since the functionality changes a little bit there.
     """
-
     return True

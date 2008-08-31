@@ -52,20 +52,13 @@ for name in dir(exceptions):
     if (type(e) is type) and issubclass(e, exceptions.BaseException):
         DOCUMENTED_EXCEPTIONS.add(e)
 
-def is_dev():
-    """Return whether the application environment is in development mode."""
-    return os.environ['SERVER_SOFTWARE'].startswith('Dev')
-
-def is_production():
-    return (not is_dev())
-
 def confirm_permission():
     """Raises an exception if the user does not have permission to execute a statement"""
     user = users.get_current_user()
     nologin = NotLoggedInError('Hello! Please $login_link to use this console')
     noadmin = NotAdminError('Please $logout_link, then log in as an administrator')
 
-    if is_production():
+    if util.is_production():
         if not user:
             raise nologin
         else:
@@ -289,7 +282,7 @@ class Page(ConsoleHandler):
         self.values = {}
         self.values['app']        = self.appID
         self.values['path']       = path
-        self.values['is_dev']     = is_dev()
+        self.values['is_dev']     = util.is_dev()
         self.values['log_in']     = users.create_login_url(path)
         self.values['log_out']    = users.create_logout_url(path)
         self.values['version']    = self.appVersion
@@ -368,7 +361,7 @@ class Console(Page):
 
 class Dashboard(Page):
     def do_get(self):
-        if is_dev():
+        if util.is_dev():
             options = ['Development', 'Production']
             #self.values['dashboard_url'] = '/_ah/admin'
             #self.values['settings'] = [ {'type':'link', 'name':'Production Dashboard',
