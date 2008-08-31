@@ -31,6 +31,7 @@ echo "app_version=$app_version"
 export app_version
 
 if [ -z "$@" ]; then
+    find "$my_app" -type f -name '*.py[co]' -exec rm {} \;
     exec dev_appserver.py "$my_app"
 else
     exec appcfg.py "$@" "$my_app"
