@@ -46,6 +46,11 @@ form#console_form {
     background-color: #f3f3f3;
 }
 
+.helpcontent strong tt {
+    background-color: inherit;
+    font-size: 115%;
+}
+
 .helpcontent .example {
     background-color: #f3f3f3;
     border: 1px solid #999999;
