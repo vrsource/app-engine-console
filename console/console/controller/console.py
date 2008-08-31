@@ -273,6 +273,8 @@ class Page(ConsoleHandler):
 
     def __init__(self, *args, **kw):
         ConsoleHandler.__init__(self, *args, **kw)
+        self.do_get = self.get
+        self.get = self.wrap_get
 
         myClass = re.search(r"<class '.*\.(.*)'", str(self.__class__)).groups()[0]
         self.page = myClass.lower()
@@ -310,11 +312,7 @@ class Page(ConsoleHandler):
     def write(self):
         self.response.out.write(template.render(self.template, self.values))
 
-    def do_get(self):
-        """This is called upon an HTTP GET.  It may be implemented by the subclass."""
-        pass
-
-    def get(self):
+    def wrap_get(self):
         self.values['user'] = users.get_current_user()
         self.do_get()
         if not hasattr(self, 'done') or self.done != True:
@@ -323,7 +321,7 @@ class Page(ConsoleHandler):
 class Console(Page):
     subpages = []
 
-    def do_get(self):
+    def get(self):
         # Set up the session. TODO: garbage collect old shell sessions
         try:
             confirm_permission()
@@ -360,7 +358,7 @@ class Console(Page):
 
 
 class Dashboard(Page):
-    def do_get(self):
+    def get(self):
         if util.is_dev():
             options = ['Development', 'Production']
             #self.values['dashboard_url'] = '/_ah/admin'
@@ -378,7 +376,7 @@ class Help(Page):
     subpages = ['usage', 'about']
 
 class Root(Page):
-    def do_get(self):
+    def get(self):
         if util.is_my_website():
             self.redirect('/console/help/about')
         else:
