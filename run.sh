@@ -25,8 +25,19 @@ if [ -d "$PWD/google_appengine" ]; then
 fi
 
 # For Git, the software "version" will be the timestamp of the latest
-# commit to the branch in the repository.
+# commit to the branch in the repository, unless it is a tagged version,
+# in which case the tag name will be used.
 app_version=`git log --pretty=format:'%ct%n' | head -1`
+commit=`git log --pretty=format:%H%n | head -1`
+for tag in .git/refs/tags/*; do
+    if [ -f "$tag" ]; then
+        if cat "$tag" | grep "$commit" >/dev/null; then
+            # This is a tagged commit, so use the tag.
+            app_version=`basename "$tag" | sed 's/\./-/g'`
+        fi
+    fi
+done
+
 echo "app_version=$app_version"
 export app_version
 
