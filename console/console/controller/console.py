@@ -388,7 +388,7 @@ class Help(Page):
         ""","""
         >>> print "3 to the 150 is", 3 ** 33
         3 to the 150 is 5559060566555523
-        >>> import sys, os
+        >>> import sys, os, logging
         >>> print "Maximum integer size:", sys.maxint
         Maximum integer size: 9223372036854775807
         >>> from google.appengine.api import memcache
@@ -396,6 +396,7 @@ class Help(Page):
         True
         >>> memcache.get("example")
         '58.8.57.254'
+        >>> logging.info("My IP address is %s" % _)
         """
     ]
 
