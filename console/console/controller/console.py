@@ -386,7 +386,7 @@ class Help(Page):
             print "hello, world"
         NotLoggedInError: Hello! Please log in to use this console
         ""","""
-        >>> print "3 to the 150 is", 3 ** 33
+        >>> print "3 to the 33 is", 3 ** 33
         3 to the 150 is 5559060566555523
         >>> import sys, os, logging
         >>> print "Maximum integer size:", sys.maxint
