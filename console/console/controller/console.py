@@ -199,7 +199,7 @@ class Statement(ConsoleHandler):
 
         def doclink(path, name):
             """Return an HTML link to the documentation"""
-            return '<a href="%s%s">%s</a>' % (config.PYTHON_DOC, path, name)
+            return '<a href="%s%s">%s</a>' % (config.python_doc, path, name)
 
         if exc_type in DOCUMENTED_EXCEPTIONS:
             name = exc_type.__name__

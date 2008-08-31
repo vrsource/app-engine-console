@@ -24,4 +24,4 @@ python_doc_linking = True
 
 # The location of the newer (Sphinx) Python documentation.  If you have a local
 # copy, you can set this to use your own version instead.
-PYTHON_DOC = 'http://docs.python.org/dev'
+python_doc = 'http://docs.python.org/dev'
