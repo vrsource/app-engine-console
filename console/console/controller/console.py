@@ -379,6 +379,7 @@ class Dashboard(Page):
 class Help(Page):
     subpages = ['usage', 'integration', 'about']
 
+    pythonLexer     = pygments.lexers.PythonLexer()
     resultLexer     = pygments.lexers.PythonConsoleLexer()
     inputFormatter  = pygments.formatters.HtmlFormatter(cssclass='statement')
     outputFormatter = pygments.formatters.HtmlFormatter(cssclass='stdout')
@@ -413,6 +414,16 @@ class Help(Page):
                 val = util.trim(self.examples[exampleNum])
                 val = pygments.highlight(val, self.resultLexer, self.outputFormatter).strip()
                 self.values[key] = val
+        elif self.values['subpage'] == 'integration':
+            self.values['example1'] = pygments.highlight(util.trim("""
+                def is_dev():
+                    import os
+                    return os.environ['SERVER_SOFTWARE'].startswith('Dev')
+            """), self.pythonLexer, self.outputFormatter).strip()
+            self.values['example2'] = pygments.highlight(util.trim("""
+                >>> is_dev()
+                True
+            """), self.resultLexer, self.outputFormatter).strip()
 
 class Root(Page):
     def get(self):

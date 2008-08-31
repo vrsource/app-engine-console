@@ -68,12 +68,27 @@
 </pre>
     </div>
 
-    <h4>Testing</h4>
+    <h4>Try It</h4>
     <p>
         Start the development SDK normally and go to <a href="http://localhost:8080/console/">http://localhost:8080/console/</a>.
         If you see the Python banner and a prompt then you are finished!  Poke around.  Create some entities.  Generate some log
         messages.  See the <a href="/console/help/usage">usage instructions</a> for more information.
     </p>
+
+    <h4>Add Convenient Functions</h4>
+    <p>
+        As with the normal Python console, you need to import any modules, classes, etc. before you can use them.
+        If you find yourself importing something often, consider adding it into the <tt>autoexec.py</tt>.  Every
+        time a console session begins, it will first run <tt>from autoexec import *</tt>.
+    </p>
+    <p>
+        For example, open <tt>autoexec.py</tt> and add the following code:
+    </p>
+    <div class="example pygments">{{example1}}</div>
+    <p>
+        Now you can use it easily at the console:
+    </p>
+    <div class="example pygments">{{example2}}</div>
 
     <h3>Configuration and Security</h3>
     <p>
