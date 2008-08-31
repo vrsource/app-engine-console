@@ -122,11 +122,11 @@ input.textbox {
 
 #console_output .output span,
 #console_output div.statement pre span {
-    white-space: pre;
+    white-space: pre-wrap;
 }
 
 #console_output span.statement.plain {
-    white-space: pre;
+    white-space: pre-wrap;
 }
 
 #prompt {
