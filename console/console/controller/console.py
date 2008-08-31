@@ -300,6 +300,10 @@ class Page(ConsoleHandler):
                                     {'name':'Help'      , 'href':'/console/help/'},
                                   ]
 
+        if util.is_my_website():
+            self.values['app'] = 'App Engine Console'
+            self.values['version'] = re.sub(r'\.\d$', '', self.values['version'])
+
         match = re.search(r'^/console/%s/(.+)$' % self.page, path)
         if match:
             # Handle a sub-path which is within the main controller path (e.g. /help/something instead of just /help).
