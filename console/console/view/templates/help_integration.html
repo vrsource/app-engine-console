@@ -45,11 +45,34 @@
         because that is where the code will live.
     </p>
 
-    <h4>Adding The Code</h4>
+    <h4>Installing The Code</h4>
     <p>
         Go to the <a href="{{project}}">App Engine Console project</a> page and download its zip file.
         Unpack this file in the topmost directory of your project (the one with your <tt>app.yaml</tt> in it).
         Everything will extract into one nice, clean subdirectory called <tt>console</tt>.
+    </p>
+
+    <h4>Enabling the Console</h4>
+    <p>
+        Edit your <tt>app.yaml</tt> file.  Insert two stanzas directly beneath the "handlers" line.
+    </p>
+    <div class="example">
+        <pre>handlers:
+- url: /console/static
+  static_dir: console/view/static
+
+- url: /console.*
+  script: console/console.py
+
+# (The rest of your handlers go below this line)
+</pre>
+    </div>
+
+    <h4>Testing</h4>
+    <p>
+        Start the development SDK normally and go to <a href="http://localhost:8080/console/">http://localhost:8080/console/</a>.
+        If you see the Python banner and a prompt then you are finished!  Poke around.  Create some entities.  Generate some log
+        messages.  See the <a href="/console/help/usage">usage instructions</a> for more information.
     </p>
 
     <h3>Configuration and Security</h3>
