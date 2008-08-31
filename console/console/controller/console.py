@@ -31,6 +31,7 @@ import pygments
 import pygments.lexers
 import pygments.formatters
 
+import util
 import model
 import config
 
@@ -385,7 +386,10 @@ class Help(Page):
 
 class Root(Page):
     def do_get(self):
-        self.redirect('/console/help/about')
+        if util.is_my_website():
+            self.redirect('/console/help/about')
+        else:
+            self.redirect('/console/')
         self.done = True
 
 __all__ = ['Console', 'Dashboard', 'Help', 'Statement', 'Banner', 'Root']
