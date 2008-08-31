@@ -400,6 +400,8 @@ class Help(Page):
     ]
 
     def get(self):
+        self.values['project'] = 'http://www.proven-corporation.com/software/app-engine-console/'
+
         if self.values['subpage'] == 'usage':
             for exampleNum in range(len(self.examples)):
                 key = 'example%d' % (exampleNum + 1)
