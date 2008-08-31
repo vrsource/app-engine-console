@@ -35,8 +35,7 @@ form#console_form {
 }
 
 .helpcontent p {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
+    margin: 0.5em 1em;
 }
 
 .helpcontent h4 {
