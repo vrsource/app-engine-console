@@ -43,7 +43,11 @@ from django.utils                import simplejson
 
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
-    'try: from autoexec import *\nexcept ImportError: pass',
+    '\n'.join(['import sys',
+               'sys.path.insert(0, "%s")' % os.path.dirname(os.path.dirname(__file__)),
+               'try: from autoexec import *',
+               'except ImportError: pass',
+               'finally: del sys'])
 ]
 
 DOCUMENTED_EXCEPTIONS = sets.Set()
