@@ -375,6 +375,24 @@ class Dashboard(Page):
 class Help(Page):
     subpages = ['usage', 'about']
 
+    resultLexer     = pygments.lexers.PythonConsoleLexer()
+    inputFormatter  = pygments.formatters.HtmlFormatter(cssclass='statement')
+    outputFormatter = pygments.formatters.HtmlFormatter(cssclass='stdout')
+
+    examples = ["""
+        >>> print 'hello world'
+        hello world
+        """,
+    ]
+
+    def get(self):
+        if self.values['subpage'] == 'usage':
+            for exampleNum in range(len(self.examples)):
+                key = 'example%d' % (exampleNum + 1)
+                val = util.trim(self.examples[exampleNum])
+                val = pygments.highlight(val, self.resultLexer, self.outputFormatter).strip()
+                self.values[key] = val
+
 class Root(Page):
     def get(self):
         if util.is_my_website():
