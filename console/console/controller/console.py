@@ -380,9 +380,23 @@ class Help(Page):
     outputFormatter = pygments.formatters.HtmlFormatter(cssclass='stdout')
 
     examples = ["""
-        >>> print 'hello world'
-        hello world
-        """,
+        >>> print "hello, world"
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+            print "hello, world"
+        NotLoggedInError: Hello! Please log in to use this console
+        ""","""
+        >>> print "3 to the 150 is", 3 ** 33
+        3 to the 150 is 5559060566555523
+        >>> import sys, os
+        >>> print "Maximum integer size:", sys.maxint
+        Maximum integer size: 9223372036854775807
+        >>> from google.appengine.api import memcache
+        >>> memcache.add(key="example", value=os.environ["REMOTE_ADDR"])
+        True
+        >>> memcache.get("example")
+        '58.8.57.254'
+        """
     ]
 
     def get(self):

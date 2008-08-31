@@ -38,6 +38,10 @@ form#console_form {
     margin-top: 0.5em;
 }
 
+.helpcontent h4 {
+    margin: 0.75em 0;
+}
+
 .helpcontent tt {
     background-color: #f3f3f3;
 }

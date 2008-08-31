@@ -21,21 +21,25 @@
 {% extends "help.html" %}
 
 {% block helpcontent %}
-    <h3>Using the Console</h3>
+    <h3>The Console</h3>
     <p>
-        An example command to run:
+        First enable Javascript in your browser, then click on the "Console" tab above.  The large gray
+        square on top is the console output, and the small input line on bottom is where you type your text.
+        If you see green Python-style banner in the output window, then everything is working.
     </p>
-    <div class="example pygments">
-        {{example1}}
-    </div>
 
-    <ul>
-        <li>
-            Use <tt>clear</tt> to clear the console window.
-        </li>
-        <li>
-            Up and down arrow keys work as a rudimentary history
-        </li>
-    </ul>
+    <h4>Authorization</h4>
+    <p>
+        Depending on the environment, App Engine Console may require you to log in first.  You can always simply
+        enter a statement, and if you lack authorization, App Engine Console will tell you to log in first:
+    </p>
+    <div class="example pygments">{{example1}}</div>
 
+    <h4>Interaction</h4>
+    <p>
+        Once you gain authorization to use the console, everything is pretty much just like a Python session.
+        Type statements at the prompt and press Enter to submit them to Python.  Press the up and down
+        arrow keys to move through the statement history, and type <tt>clear</tt> to clear the screen.
+    </p>
+    <div class="example pygments">{{example2}}</div>
 {% endblock %}
