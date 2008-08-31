@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Wrapper to run the application in the development SDK.
+# Script to update the software with appspot
 #
 # This file is part of App Engine Console.
 #
@@ -18,6 +18,4 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 source version.sh
-
-find "$my_app" -type f -name '*.py[co]' -exec rm {} \;
-exec dev_appserver.py "$my_app"
+exec appcfg.py update "$my_app"
