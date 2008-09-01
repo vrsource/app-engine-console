@@ -171,6 +171,7 @@ class Statement(ConsoleHandler):
             self.confirmPostRate()
         except ConsoleError:
             # Acces denied.
+            logging.info('Access denied (%s): %s' % (exc_type, username()))
             exc_type, exc_value, tb = sys.exc_info()
             err = self.formatConsoleError(code, exc_type, exc_value)
             result = False
@@ -193,8 +194,6 @@ class Statement(ConsoleHandler):
 
     def formatConsoleError(self, code, exc_type, exc_value):
         """Format a ConsoleError exception for sending back to the client."""
-        logging.info('Console error %s for: %s' % (exc_type, username()))
-
         stack = (('<stdin>', 1, '<module>', code),)
         return ('Traceback (most recent call last):\n' +
                 ''.join(traceback.format_list(stack)) +
