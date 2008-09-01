@@ -90,6 +90,9 @@ def username():
     return '%s (%s)' % (name, os.environ['REMOTE_ADDR'])
 
 
+class HandlerError(Exception):
+    """A handler can not process a request normally"""
+
 class ConsoleError(Exception):
     """General error in console"""
 
@@ -132,19 +135,15 @@ class Statement(ConsoleHandler):
     outputFormatter = pygments.formatters.HtmlFormatter(cssclass='stdout')
     errorFormatter  = pygments.formatters.HtmlFormatter(cssclass='stderr')
 
-    def __init__(self, *args, **kw):
-        ConsoleHandler.__init__(self, *args, **kw)
-        if util.is_my_website():
-            logging.info('Rate-limiting the statement handler for this site')
-            self.real_post = self.post
-            self.post = self.limited_post
-
-    def limited_post(self):
-        requester = os.environ.get('REMOTE_ADDR', 'unknown')
+    def confirmPostRate(self):
+        """Make sure anybody using the site doesn't post too quickly and use up resources."""
+        if not util.is_my_website():
+            return
 
         # Ideally, the REMOTE_ADDR combined with HTTP_X_FORWARDED_FOR reasonably identifies a unique user.  But
         # someone could just change their FORWARDED_FOR header all the time and get around this limit, so we
         # just make everybody behind the same proxy suffer.
+        requester = os.environ.get('REMOTE_ADDR', 'unknown')
         #requester += ',' + os.environ.get('HTTP_X_FORWARDED_FOR', '')
 
         # XXX: There is a small risk here since no distinction is made between "key does not exist"
@@ -153,27 +152,13 @@ class Statement(ConsoleHandler):
         if numStatements is None:
             # Start a fresh timer to limit the statements.
             result = memcache.add(requester, 1, 60)     # 60-second timeout
-            if result:
-                return self.real_post()
-            else:
+            if result == False:
                 logging.error('Failed to set memcache for: %s' % requester)
                 self.error(403)
-                return
-        else:
-            if numStatements <= self.PUBLIC_STATEMENT_LIMIT:
-                # Still within the limit.
-                return self.real_post()
-            else:
-                logging.info('Denying frequent statement: %s from %s:\n%s' % (username(), requester, self.request.get('code')))
-                code = self.request.get('code')
-                exc_type = TooFastError
-                exc_value = TooFastError('Sorry, your statements are too frequent. Please wait about a minute or consider ${download}.')
-                err = self.formatConsoleError(code, exc_type, exc_value)
-                response = self.buildResponse(code, '', err, exc_type, templating=True)
-
-                # This is somewhat nonstandard since an exception would usually abort code execution.  But leave it pending.
-                self.response.headers['Content-Type'] = 'application/x-javascrip'
-                self.response.out.write(simplejson.dumps(response))
+                raise HandlerError('Memcache error')
+        elif numStatements > self.PUBLIC_STATEMENT_LIMIT:
+                logging.info('Denying statement %d: %s' % (numStatements, username()))
+                raise TooFastError('Sorry, your statements are too frequent. Please wait one minute or consider ${download}.')
 
     def post(self):
         """Process a statement and return output and error messages"""
@@ -183,12 +168,16 @@ class Statement(ConsoleHandler):
 
         try:
             confirm_permission()
+            self.confirmPostRate()
         except ConsoleError:
             # Acces denied.
             exc_type, exc_value, tb = sys.exc_info()
             err = self.formatConsoleError(code, exc_type, exc_value)
             result = False
             output_templating = True
+        except HandlerError:
+            # This can happen for a permission denial, e.g. with the rate limiter.
+            return
         else:
             # Access granted.
             session_key = self.request.get('session')
