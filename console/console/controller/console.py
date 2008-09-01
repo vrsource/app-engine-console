@@ -101,6 +101,9 @@ class NotLoggedInError(ConsoleError):
 class NotAdminError(ConsoleError):
     """Admin required"""
 
+class TooFastError(ConsoleError):
+    """The rate of statements it too high"""
+
 class ConsoleHandler(webapp.RequestHandler):
     """This is a normal webapp request handler, but if the user does not have permission
     to access the page, it will 404 if configured to do so.
@@ -149,8 +152,15 @@ class Statement(ConsoleHandler):
         using = memcache.get(requester)
         if using is not None:
             # This IP address already has a recently-made request, so deny it.
-            self.error(403)
-            return
+            code = self.request.get('code')
+            exc_type = TooFastError
+            exc_value = TooFastError('Sorry, your statements are too frequent. Please wait a few seconds or consider ${download}.')
+            err = self.formatConsoleError(code, exc_type, exc_value)
+            response = self.buildResponse(code, '', err, exc_type, templating=True)
+
+            # This is somewhat nonstandard since an exception would usually abort code execution.  But leave it pending.
+            self.response.headers['Content-Type'] = 'application/x-javascrip'
+            self.response.out.write(simplejson.dumps(response))
         else:
             result = memcache.add(requester, 'Used', self.PUBLIC_STATEMENT_TIMEOUT)
             if result:
@@ -211,9 +221,10 @@ class Statement(ConsoleHandler):
         if templating:
             if highlighting:
                 changes = { 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
-                            'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')) }
+                            'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')),
+                            'download'   : '<a href="http://www.proven-corporation.com/software/app-engine-console/">downloading App Engine Console</a>'}
             else:
-                changes = { 'login_link' : 'log in', 'logout_link': 'log out' }
+                changes = { 'login_link' : 'log in', 'logout_link': 'log out', 'download':'downloading App Engine Console' }
             err = string.Template(err).safe_substitute(changes)
 
         return {'in':code, 'out': out + err,}

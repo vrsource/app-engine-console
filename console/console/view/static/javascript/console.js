@@ -120,7 +120,8 @@ var statementSubmit = function(event) {
 
             scrollOutput();
 
-            showPrompt(response.result);
+            if(response.result != null)
+                showPrompt(response.result);
         };
 
         $.post('/console/statement', values, returnedStatement, 'json');
