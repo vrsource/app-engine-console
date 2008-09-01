@@ -160,9 +160,6 @@ class Statement(ConsoleHandler):
                 self.error(403)
                 return
 
-    def write(self, *args, **kw):
-        self.response.out.write(*args, **kw)
-
     def post(self):
         code = self.request.get('code')
         session_key = self.request.get('session')
@@ -214,7 +211,7 @@ class Statement(ConsoleHandler):
         }
 
         self.response.headers['Content-Type'] = 'application/x-javascript'
-        self.write(simplejson.dumps(response))
+        self.response.out.write(simplejson.dumps(response))
 
     def highlight(self, code, exc_type=None):
         """Return syntax-highlighted code using the PythonConsole lexer."""
