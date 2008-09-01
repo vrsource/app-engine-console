@@ -22,9 +22,8 @@
 
 {% block body %}
     {% if ratelimit %}
-        {% load humanize %}
         <div class="notice">
-            <strong>Notice:</strong> To keep the site available to all, a limit is in place of one statement per {{ratelimit|apnumber}} seconds.  Thank you.
+            <strong>Notice:</strong> To keep the site available to all, a limit is in place of {{ratelimit}} statements per minute.  Thank you.
         </div>
     {% endif %}
     <div id="console_interface">

@@ -41,8 +41,6 @@ from google.appengine.ext        import db
 from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
 from django.utils                import simplejson
-import django.conf
-django.conf.settings.INSTALLED_APPS += ('django.contrib.humanize',)
 
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
@@ -110,7 +108,7 @@ class ConsoleHandler(webapp.RequestHandler):
     """
 
     # This value is only used for the App Engine Console public web site, to prevent abuse.
-    PUBLIC_STATEMENT_TIMEOUT = 6    # 10 statements per minute
+    PUBLIC_STATEMENT_LIMIT = 10   # 10 statements per minute
 
     def safe_get(self):
         try:
@@ -149,26 +147,33 @@ class Statement(ConsoleHandler):
         # just make everybody behind the same proxy suffer.
         #requester += ',' + os.environ.get('HTTP_X_FORWARDED_FOR', '')
 
-        using = memcache.get(requester)
-        if using is not None:
-            # This IP address already has a recently-made request, so deny it.
-            code = self.request.get('code')
-            exc_type = TooFastError
-            exc_value = TooFastError('Sorry, your statements are too frequent. Please wait a few seconds or consider ${download}.')
-            err = self.formatConsoleError(code, exc_type, exc_value)
-            response = self.buildResponse(code, '', err, exc_type, templating=True)
-
-            # This is somewhat nonstandard since an exception would usually abort code execution.  But leave it pending.
-            self.response.headers['Content-Type'] = 'application/x-javascrip'
-            self.response.out.write(simplejson.dumps(response))
-        else:
-            result = memcache.add(requester, 'Used', self.PUBLIC_STATEMENT_TIMEOUT)
+        # XXX: There is a small risk here since no distinction is made between "key does not exist"
+        # and "failed to increment key for some other reason.
+        numStatements = memcache.incr(requester)
+        if numStatements is None:
+            # Start a fresh timer to limit the statements.
+            result = memcache.add(requester, 1, 60)     # 60-second timeout
             if result:
                 return self.real_post()
             else:
                 logging.error('Failed to set memcache for: %s' % requester)
                 self.error(403)
                 return
+        else:
+            if numStatements <= self.PUBLIC_STATEMENT_LIMIT:
+                # Still within the limit.
+                return self.real_post()
+            else:
+                logging.info('Denying frequent statement: %s from %s:\n%s' % (username(), requester, self.request.get('code')))
+                code = self.request.get('code')
+                exc_type = TooFastError
+                exc_value = TooFastError('Sorry, your statements are too frequent. Please wait about a minute or consider ${download}.')
+                err = self.formatConsoleError(code, exc_type, exc_value)
+                response = self.buildResponse(code, '', err, exc_type, templating=True)
+
+                # This is somewhat nonstandard since an exception would usually abort code execution.  But leave it pending.
+                self.response.headers['Content-Type'] = 'application/x-javascrip'
+                self.response.out.write(simplejson.dumps(response))
 
     def post(self):
         """Process a statement and return output and error messages"""
@@ -396,7 +401,7 @@ class Console(Page):
                 session_key = engine.put()
 
         if util.is_my_website():
-            self.values['ratelimit'] = self.PUBLIC_STATEMENT_TIMEOUT
+            self.values['ratelimit'] = self.PUBLIC_STATEMENT_LIMIT
 
         if config.pastebin_subdomain:
             pastebin = 'http://%s.pastebin.com/' % config.pastebin_subdomain
