@@ -342,6 +342,7 @@ class Page(ConsoleHandler):
                                   ]
 
         if util.is_my_website():
+            self.values['my_website'] = True
             self.values['app'] = 'App Engine Console'
             self.values['version'] = re.sub(r'\.\d$', '', self.values['version'])
 

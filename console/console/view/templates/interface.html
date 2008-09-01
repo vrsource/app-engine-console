@@ -129,5 +129,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
   {% include "console_revision.html" %}
 </div>
 
+{% block analytics %}
+    {% if my_website %}
+        {# This is for tracking with Google Analytics when viewed at the con.appspot.com page #}
+        <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+            </script>
+            <script type="text/javascript">
+            var pageTracker = _gat._getTracker("UA-1486381-4");
+            pageTracker._trackPageview();
+        </script>
+    {% endif %}
+{% endblock %}
 </body>
 </html>
