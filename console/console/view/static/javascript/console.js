@@ -67,13 +67,22 @@ var statementSubmit = function(event) {
         var promptStr = '>>> ';
         if(promptType == 'ps2')
             promptStr = '... ';
-        $('#console_output').append($('<span>').addClass('prompt').append(promptStr));
+
+        // Due to IE 6 support, not pure jQuery anymore.
+        if(!is_ie)
+            $('#console_output').append($('<span>').addClass('prompt').append(promptStr));
+        else
+            $('#console_output').append($('<span class="prompt">' + promptStr + '</span>'));
 
         // This is a temporary representation of the code.  When the server replies,
         // it will re-send the code that it processed (possibly marked up with syntax
         // highlighting), and we will replace the content with the server's version.
         var statementContainer = $('<span>').addClass('statement').addClass('plain').append(statement);
-        $('#console_output').append(statementContainer);
+        if(!is_ie)
+            $('#console_output').append(statementContainer);
+        else
+            // This doesn't support replacing the statement wiht syntax hilighting but oh well.
+            $('#console_output').append('<span class="statement plain">' + statement + '</span>');
 
         // Bring the history up to date.
         hist.buffer.push(statement);
@@ -104,7 +113,7 @@ var statementSubmit = function(event) {
             }
 
             // Replace the old temporarary code with the server's version.
-            statementContainer.html(response.in);
+            statementContainer.html(response['in']);
             if(highlight)
                 statementContainer.addClass('pygments').removeClass('plain');
 
@@ -182,17 +191,14 @@ var fetchBanner = function() {
         return;
 
     var gotBanner = function(response, textStatus) {
-        // Handle the banner from the console.
-        var banner = $('<pre>');
-
+        // Handle the banner from the console.  Because of an IE bug, there is a little bit
+        // of old-school string concatenation instead of pure jQuery.
         if(textStatus == 'success')
-            banner.addClass('banner').append(response.banner);
-        else {
+            $('#console_output').append($('<pre class="banner">' + response.banner + '</pre>'));
+        else  {
             console.error('Banner error: %s; response=%s', textStatus, response);
-            banner.addClass('error').append('(Failed to fetch Python banner)');
+            $('#console_output').append($('<pre class="error">(Failed to fetch Python banner)</pre>'));
         }
-        $('#console_output').append(banner);
-
         showPrompt();
     };
 
@@ -208,11 +214,12 @@ var showPrompt = function(continuing) {
     }
 
     $('#prompt').html(
-        $('<span>').addClass('prompt').append(promptStr)
+        // Again, due to IE 6, no pure jQuery.
+        '<span class="prompt">' + promptStr + '</span>'
     );
 
-    //var promptSpace = $('#prompt span').width() + 10;
-    //$('#oneline').css('margin-left', promptSpace);
+    var promptSpace = $('#prompt span').width() + 10;
+    $('#oneline').css('margin-left', promptSpace);
 };
 
 var cls = function() {
@@ -272,15 +279,21 @@ var setTeamwork = function(event) {
     var showTalkinator = function() {
         var room = $('#setting_room').val();
         var widgetWidth = 250;
+        var frameHeight = 540;
         var consoleOffset = widgetWidth + 10;
+
+        if(is_ie) {
+            frameHeight -= 50;
+            consoleOffset += 10;
+        }
 
         console.width(console.width() - consoleOffset);
         talkinator.width(widgetWidth);
         talkinator.css('display', 'block');
         talkinator.html(
-            '<iframe width="' + widgetWidth + '" height="540" marginwidth="0" marginheight="0" scrolling="no"' +
+            '<iframe width="' + widgetWidth + '" height="' + frameHeight + '" marginwidth="0" marginheight="0" scrolling="no"' +
             '       style="border: 2px solid #93b7fa" frameborder="0"'                         +
-            '       src="http://t8r4.info/$r?s=0&t=h&w=250&h=540&c=93b7fa&b=' + room + '"> '   +
+            '       src="http://t8r4.info/$r?s=0&t=h&w=250&h=' + frameHeight + '&c=93b7fa&b=' + room + '"> '   +
             '</iframe>');
     };
 
@@ -348,6 +361,8 @@ var uid = (function() {
         };
     }
 )();
+
+var is_ie = (navigator.appName=='Microsoft Internet Explorer') ? true : false;
 
 //
 // __END__
