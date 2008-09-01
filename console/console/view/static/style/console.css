@@ -29,6 +29,15 @@ form#console_form {
     width: 100%;
 }
 
+.notice {
+    clear: both;
+    background-color: #d2413a;
+    background-color: #def2f1;
+    border: 1px solid #999999;
+    margin: 1em 0;
+    padding: 0.5em 1em;
+}
+
 .helpcontent {
     width: 40em;
     font-size: 125%;

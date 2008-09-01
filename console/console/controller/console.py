@@ -41,6 +41,8 @@ from google.appengine.ext        import db
 from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
 from django.utils                import simplejson
+import django.conf
+django.conf.settings.INSTALLED_APPS += ('django.contrib.humanize',)
 
 # Unpicklable statements to seed new sessions with.
 INITIAL_UNPICKLABLES = [
@@ -379,6 +381,9 @@ class Console(Page):
                 engine = model.AppEngineConsole()
                 engine.unpicklables = [db.Text(line) for line in INITIAL_UNPICKLABLES]
                 session_key = engine.put()
+
+        if util.is_my_website():
+            self.values['ratelimit'] = self.PUBLIC_STATEMENT_TIMEOUT
 
         if config.pastebin_subdomain:
             pastebin = 'http://%s.pastebin.com/' % config.pastebin_subdomain

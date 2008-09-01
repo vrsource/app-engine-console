@@ -21,6 +21,12 @@
 {% extends "interface.html" %}
 
 {% block body %}
+    {% if ratelimit %}
+        {% load humanize %}
+        <div class="notice">
+            <strong>Notice:</strong> To keep the site available to all, a limit is in place of one statement per {{ratelimit|apnumber}} seconds.  Thank you.
+        </div>
+    {% endif %}
     <div id="console_interface">
         <form id="console_form" action="/console/statement">
             <div class="issue-list">
