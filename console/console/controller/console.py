@@ -36,6 +36,7 @@ import model
 import config
 
 from google.appengine.api        import users
+from google.appengine.api        import memcache
 from google.appengine.ext        import db
 from google.appengine.ext        import webapp
 from google.appengine.ext.webapp import template
@@ -103,6 +104,9 @@ class ConsoleHandler(webapp.RequestHandler):
     to access the page, it will 404 if configured to do so.
     """
 
+    # This value is only used for the App Engine Console public web site, to prevent abuse.
+    PUBLIC_STATEMENT_TIMEOUT = 6    # 10 statements per minute
+
     def safe_get(self):
         try:
             confirm_permission()
@@ -124,6 +128,35 @@ class Statement(ConsoleHandler):
     inputFormatter  = pygments.formatters.HtmlFormatter(cssclass='statement')
     outputFormatter = pygments.formatters.HtmlFormatter(cssclass='stdout')
     errorFormatter  = pygments.formatters.HtmlFormatter(cssclass='stderr')
+
+    def __init__(self, *args, **kw):
+        ConsoleHandler.__init__(self, *args, **kw)
+        if util.is_my_website():
+            logging.info('Rate-limiting the statement handler for this site')
+            self.real_post = self.post
+            self.post = self.limited_post
+
+    def limited_post(self):
+        requester = os.environ.get('REMOTE_ADDR', 'unknown')
+
+        # Ideally, the REMOTE_ADDR combined with HTTP_X_FORWARDED_FOR reasonably identifies a unique user.  But
+        # someone could just change their FORWARDED_FOR header all the time and get around this limit, so we
+        # just make everybody behind the same proxy suffer.
+        #requester += ',' + os.environ.get('HTTP_X_FORWARDED_FOR', '')
+
+        using = memcache.get(requester)
+        if using is not None:
+            # This IP address already has a recently-made request, so deny it.
+            self.error(403)
+            return
+        else:
+            result = memcache.add(requester, 'Used', self.PUBLIC_STATEMENT_TIMEOUT)
+            if result:
+                return self.real_post()
+            else:
+                logging.error('Failed to set memcache for: %s' % requester)
+                self.error(403)
+                return
 
     def write(self, *args, **kw):
         self.response.out.write(*args, **kw)
