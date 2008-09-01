@@ -19,3 +19,4 @@ Features
 * Special behavior for the console site itself:
   * A simple form to submit feedback
   * Analytics
+  * Maximum query rate per IP address
