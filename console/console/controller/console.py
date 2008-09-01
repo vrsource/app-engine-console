@@ -161,31 +161,43 @@ class Statement(ConsoleHandler):
                 return
 
     def post(self):
+        """Process a statement and return output and error messages"""
         code = self.request.get('code')
-        session_key = self.request.get('session')
         output_templating = False
-        out, err = '', ''
+        out, err, exc_type = ('', '', None)
 
         try:
             confirm_permission()
         except ConsoleError:
-            engine = model.AppEngineConsole()       # Just make a temporary one so the code below works.
+            # Acces denied.
             exc_type, exc_value, tb = sys.exc_info()
-            logging.info('Console error %s for: %s' % (exc_type, username()))
-
-            stack = (('<stdin>', 1, '<module>', code),)
-            err = ('Traceback (most recent call last):\n' +
-                   ''.join(traceback.format_list(stack)) +
-                   ''.join(traceback.format_exception_only(exc_type, exc_value)))
+            err = self.formatConsoleError(code, exc_type, exc_value)
             result = False
             output_templating = True
         else:
             # Access granted.
+            session_key = self.request.get('session')
             engine = model.AppEngineConsole.get(session_key)
             result = engine.runsource(code)
             out = engine.out
             err = engine.err
 
+        self.response.headers['Content-Type'] = 'application/x-javascript'
+        response = self.buildResponse(code, out, err, exc_type, output_templating)
+        response['result'] = result
+        self.response.out.write(simplejson.dumps(response))
+
+    def formatConsoleError(self, code, exc_type, exc_value):
+        """Format a ConsoleError exception for sending back to the client."""
+        logging.info('Console error %s for: %s' % (exc_type, username()))
+
+        stack = (('<stdin>', 1, '<module>', code),)
+        return ('Traceback (most recent call last):\n' +
+                ''.join(traceback.format_list(stack)) +
+                ''.join(traceback.format_exception_only(exc_type, exc_value)))
+
+    def buildResponse(self, code, out='', err='', exc_type=None, templating=False):
+        """Given the output and error messages of a statement, prepare them for sending via JSON."""
         highlighting = (self.request.get('highlight') != '0')
         if highlighting:
             logging.debug('Highlighting code')
@@ -194,9 +206,9 @@ class Statement(ConsoleHandler):
             if out:
                 out = self.highlight(out)
             if err:
-                err = self.highlight(err, engine.exc_type)
+                err = self.highlight(err, exc_type)
 
-        if output_templating:
+        if templating:
             if highlighting:
                 changes = { 'login_link' : ('<a href="%s">log in</a>' % users.create_login_url('/console/')),
                             'logout_link': ('<a href="%s">log out</a>' % users.create_logout_url('/console/')) }
@@ -204,14 +216,7 @@ class Statement(ConsoleHandler):
                 changes = { 'login_link' : 'log in', 'logout_link': 'log out' }
             err = string.Template(err).safe_substitute(changes)
 
-        response = {
-            'in' : code,
-            'out': out + err,
-            'result': result,
-        }
-
-        self.response.headers['Content-Type'] = 'application/x-javascript'
-        self.response.out.write(simplejson.dumps(response))
+        return {'in':code, 'out': out + err,}
 
     def highlight(self, code, exc_type=None):
         """Return syntax-highlighted code using the PythonConsole lexer."""
