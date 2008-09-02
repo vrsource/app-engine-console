@@ -28,6 +28,8 @@ if [ -d "$PWD/google_appengine" ]; then
     PATH="$PATH:$PWD/google_appengine"
 fi
 
+tagged=''
+
 # For Git, the software "version" will be the timestamp of the latest
 # commit to the branch in the repository, unless it is a tagged version,
 # in which case the tag name will be used.
@@ -38,6 +40,7 @@ for tag in .git/refs/tags/*; do
         if cat "$tag" | grep "$commit" >/dev/null; then
             # This is a tagged commit, so use the tag.
             app_version=`basename "$tag" | sed 's/\./-/g'`
+            tagged=yes
         fi
     fi
 done
