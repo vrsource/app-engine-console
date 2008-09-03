@@ -10,8 +10,6 @@ Features
 ========
 
 * Maybe cache the pages in the Help tab in memcache or the data store
-* Maybe move the code even deeper so that only autoexec.py, config.py, and
-  the license are at the top-level
 * Make a script to package up a zip file from a tag
 * More RESTful architecture
 * The ability for people to share contexts if they want

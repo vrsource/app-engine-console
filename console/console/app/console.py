@@ -25,8 +25,8 @@ import code
 import logging
 
 from os.path import join, dirname
-sys.path.insert(0, join(dirname(__file__), 'lib'))
 sys.path.insert(0, dirname(__file__))
+sys.path.insert(0, dirname(dirname(__file__)))
 
 import logging
 import controller
