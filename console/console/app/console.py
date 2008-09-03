@@ -28,12 +28,14 @@ from os.path import join, dirname
 sys.path.insert(0, dirname(__file__))
 sys.path.insert(0, dirname(dirname(__file__)))
 
-import logging
+import util
 import controller
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
+debug = util.is_dev()
+logging.info('WSGI debugging: %s' % debug)
 application = webapp.WSGIApplication([
     ('/'                  , controller.Root),
     ('/console/dashboard/', controller.Dashboard),
@@ -41,7 +43,7 @@ application = webapp.WSGIApplication([
     ('/console/statement' , controller.Statement),
     ('/console/banner'    , controller.Banner),
     ('/console.*'         , controller.Console),
-], debug=True)
+], debug=debug)
 
 def main():
     logging.getLogger().setLevel(logging.DEBUG)
