@@ -24,6 +24,7 @@ import code
 import types
 import logging
 import StringIO
+import datetime
 import traceback
 
 from model.session import ShellSession
@@ -43,7 +44,7 @@ UNPICKLABLE_TYPES = (
 class AppEngineConsole(ShellSession):
     """An interactive console session, derived from the Google shell session example."""
     pending_source = db.TextProperty()
-    last_used      = db.DateTimeProperty(auto_now=True)
+    last_used      = db.DateTimeProperty()
 
     def __init__(self, *args, **kw):
         ShellSession.__init__(self, *args, **kw)
@@ -70,6 +71,7 @@ class AppEngineConsole(ShellSession):
         "output" attribute will have the text output of execution (stdout and stderr).
         """
         self.fresh()
+        self.last_used = datetime.datetime.now()
 
         user = users.get_current_user()
         if not user:
