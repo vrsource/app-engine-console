@@ -65,13 +65,20 @@ class AppEngineConsole(ShellSession):
         self.put()
 
     def runsource(self, source):
+        """Wrap the real source processor to record when the source was processed."""
+        try:
+            self.last_used = datetime.datetime.now()
+            return self.processSource(source)
+        finally:
+            self.put()
+
+    def processSource(self, source):
         """Runs some source code in the object's context.  The return value will be
         True if the code is valid but incomplete, or False if the code is
         complete (whether by error or not).  If the code is complete, the
         "output" attribute will have the text output of execution (stdout and stderr).
         """
         self.fresh()
-        self.last_used = datetime.datetime.now()
 
         user = users.get_current_user()
         if not user:
@@ -174,8 +181,6 @@ class AppEngineConsole(ShellSession):
                         self.set_global(name, val)
         finally:
             sys.modules['__main__'] = old_main
-
-        self.put()
 
         return False    # Code execution completed.
 
