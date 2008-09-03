@@ -43,6 +43,7 @@ UNPICKLABLE_TYPES = (
 class AppEngineConsole(ShellSession):
     """An interactive console session, derived from the Google shell session example."""
     pending_source = db.TextProperty()
+    last_used      = db.DateTimeProperty(auto_now=True)
 
     def __init__(self, *args, **kw):
         ShellSession.__init__(self, *args, **kw)
