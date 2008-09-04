@@ -218,8 +218,10 @@ var showPrompt = function(continuing) {
         '<span class="prompt">' + promptStr + '</span>'
     );
 
-    var promptSpace = $('#prompt span').width() + 10;
-    $('#oneline').css('margin-left', promptSpace);
+    if(is_ie) {
+        var promptSpace = $('#prompt span').width() + 10;
+        $('#oneline').css('margin-left', promptSpace);
+    }
 };
 
 var cls = function() {
