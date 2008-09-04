@@ -35,11 +35,6 @@
     zoom: 1;
 }
 
-#console_output span.prompt,
-#console_output span.statement {
-    font-size: 140%;
-}
-
 .helpcontent strong tt {
     font-size: 90%;
 }
@@ -53,6 +48,5 @@ div.mainmenu {
 }
 
 input.textbox {
-    font-size: 1em;
     width: 99%;
 }
