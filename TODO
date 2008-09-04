@@ -16,3 +16,4 @@ Features
 * See if IPython is pure-python and if so, maybe use it as the back-end
 * logging integration
 * Perhaps a emacs/readline-style interface (^A, ^E, ^U, ^K) at the prompt
+* Some sort of GData integration
