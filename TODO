@@ -3,7 +3,6 @@ Bugs
 
 * No unit tests
 * Deleting an unpicklable from the session does not work
-* Support IE
 
 Features
 ========
