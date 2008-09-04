@@ -82,7 +82,8 @@ var statementSubmit = function(event) {
             $('#console_output').append(statementContainer);
         else
             // This doesn't support replacing the statement wiht syntax hilighting but oh well.
-            $('#console_output').append('<span class="statement plain">' + statement + '</span>');
+            statementContainer = $('<span class="statement plain">' + statement + '</span>');
+            $('#console_output').append(statementContainer);
 
         // Bring the history up to date.
         hist.buffer.push(statement);
