@@ -426,6 +426,12 @@ class Dashboard(Page):
             {'type':'hidden', 'id':'dash_url_dev', 'value':'/_ah/admin'},
         ]
 
+        # Provide a view of Google Analytics if possible.
+        if config.analytics_id:
+            options.append('Analytics')
+            self.values['settings'].append({'type':'hidden', 'id':'dash_url_analytics', 'value':config.analytics_id})
+
+
 class Help(Page):
     subpages = ['usage', 'integration', 'about']
 

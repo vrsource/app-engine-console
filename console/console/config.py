@@ -9,6 +9,13 @@ hide_from_invalid_users = False
 # set this variable to True.
 allow_any_user = False
 
+# If your site uses Google Analytics and you want to have the Google Analytics
+# reports available in the dashboard, put your site's ID here.  To get the ID,
+# go to your report and get the "id" variable from the URL.  *Note*, this is
+# *not* the ID that Google has you paste into your pages.  It is a different
+# ID that comes from the reports page within google.
+analytics_id = ''
+
 # Set this to a string if you wish to use a subdomain of pastebin.com.
 pastebin_subdomain = ''
 
