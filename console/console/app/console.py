@@ -35,7 +35,6 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 debug = util.is_dev()
-logging.info('WSGI debugging: %s' % debug)
 application = webapp.WSGIApplication([
     ('/'                  , controller.Root),
     ('/console/dashboard/', controller.Dashboard),
@@ -46,7 +45,8 @@ application = webapp.WSGIApplication([
 ], debug=debug)
 
 def main():
-    logging.getLogger().setLevel(logging.DEBUG)
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     run_wsgi_app(application)
 
 if __name__ == "__main__":
