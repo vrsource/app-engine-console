@@ -19,14 +19,14 @@
 
 source version.sh
 
-if [ ! "$tagged" ]; then
+if [ ! "$git_tag" ]; then
     echo "This script must run on a tagged revision." >&2
     echo "Current tags:" >&2
     git tag | sed 's/^/ - /' >&2
     exit 1
 fi
 
-package="AppEngineConsole-$app_version"
+package="AppEngineConsole-$git_tag"
 target="$PWD/$package"
 zipfile="$PWD/$package.zip"
 
@@ -37,9 +37,9 @@ set -e
 rm -vf "$zipfile"
 mkdir -p "$target"
 
-allow_modified=1
+allow_modified=0
 if [ -z "$allow_modified" ]; then
-    if ! git diff-index --quiet --cached "$app_version" --; then
+    if ! git diff-index --quiet --cached "$git_tag" --; then
         echo 'Error: This checkout has been modified from the tagged version' >&2
         exit 1
     fi
@@ -58,4 +58,4 @@ cd "$target"
 zip -r "$zipfile" console
 
 cd ..
-#rm -rf "$target"
+rm -rf "$target"
