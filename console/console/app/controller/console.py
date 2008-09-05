@@ -171,7 +171,7 @@ class Statement(ConsoleHandler):
             self.confirmPostRate()
         except ConsoleError:
             # Acces denied.
-            logging.info('Access denied (%s): %s' % (exc_type, username()))
+            logging.info('Access denied (%s): %s\n%s' % (exc_type, username(), code))
             exc_type, exc_value, tb = sys.exc_info()
             err = self.formatConsoleError(code, exc_type, exc_value)
             result = False
