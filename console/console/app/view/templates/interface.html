@@ -139,7 +139,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 </div>
 
 {% block analytics %}
-    {% if my_website %}
+    {% if my_website and not admin %}
         {# This is for tracking with Google Analytics when viewed at the con.appspot.com page #}
         <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

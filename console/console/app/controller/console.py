@@ -329,6 +329,7 @@ class Page(ConsoleHandler):
         self.values = {}
         self.values['app']        = self.appID
         self.values['path']       = path
+        self.values['admin']      = users.is_current_user_admin()
         self.values['is_dev']     = util.is_dev()
         self.values['log_in']     = users.create_login_url(path)
         self.values['log_out']    = users.create_logout_url(path)
