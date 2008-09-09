@@ -1,6 +1,7 @@
 Bugs
 ====
 
+* Dynamic height of the console, supporting small and large resolution
 * No unit tests
 * Deleting an unpicklable from the session does not work
 
