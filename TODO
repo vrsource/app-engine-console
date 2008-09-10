@@ -8,6 +8,7 @@ Bugs
 Features
 ========
 
+* Chrome and Safari support (20% and 8% of the visits respectively)
 * Maybe cache the pages in the Help tab in memcache or the data store
 * Make a script to package up a zip file from a tag
 * More RESTful architecture
