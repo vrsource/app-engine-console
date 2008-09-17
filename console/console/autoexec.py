@@ -9,7 +9,10 @@ execute "from autoexec import *".  So you may place anything in here which you f
 #from google.appengine.api import users
 #import logging
 
-# This allows you to run help(...) just like the standard console has.
+# This allows you to run help(...) just like the standard console has.  For some
+# reason, setuptools is breaking this import as of SDK version 1.1.3.
+import sys, re
+sys.path = [x for x in sys.path if not re.search('setuptools', x)]
 import site
 help = site._Helper()
-del site
+del sys, re, site, x
