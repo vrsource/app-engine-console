@@ -283,7 +283,7 @@ var setTeamwork = function(event) {
         var room = $('#setting_room').val();
         var widgetWidth = 250;
         var frameHeight = 540;
-        var consoleOffset = widgetWidth + 10;
+        var consoleOffset = widgetWidth + 30;
 
         if(is_ie) {
             frameHeight -= 50;
