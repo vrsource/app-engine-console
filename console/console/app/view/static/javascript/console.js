@@ -275,13 +275,14 @@ var setTeamwork = function(event) {
     /* Handle the various teamwork settings. */
     var choice     = $('#setting_teamwork').val();
     var talkinator = $('#talkinator');
+    j = talkinator;
     var pastebin   = $('#pastebin');
     var console    = $('#console_interface');
 
     /* Talkinator stuff */
     var showTalkinator = function() {
         var room = $('#setting_room').val();
-        var widgetWidth = 250;
+        var widgetWidth = 240;
         var frameHeight = 540;
         var consoleOffset = widgetWidth + 30;
 
@@ -290,8 +291,9 @@ var setTeamwork = function(event) {
             consoleOffset += 10;
         }
 
-        console.width(console.width() - consoleOffset);
         talkinator.width(widgetWidth);
+        talkinator.parent().addClass('has-sidebar');
+        $('#yui-main > .yui-b').addClass('has-sidebar');
         talkinator.css('display', 'block');
         talkinator.html(
             '<iframe width="' + widgetWidth + '" height="' + frameHeight + '" marginwidth="0" marginheight="0" scrolling="no"' +
@@ -303,8 +305,8 @@ var setTeamwork = function(event) {
     var hideTalkinator = function() {
         talkinator.html('');
         talkinator.css('display', 'none');
-        talkinator.width(0);
-        console.width('100%');
+        talkinator.parent().removeClass('has-sidebar');
+        $('#yui-main > .yui-b').removeClass('has-sidebar');
     };
 
     /* Pastebin stuff */
