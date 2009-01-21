@@ -22,3 +22,4 @@ Features
 * logging integration
 * Perhaps a emacs/readline-style interface (^A, ^E, ^U, ^K) at the prompt
 * Some sort of GData integration
+* Update to the latest Pygments
