@@ -1,6 +1,6 @@
 # The WSGI entry-point for App Engine Console
 #
-# Copyright 2008 Proven Corporation Co., Ltd., Thailand
+# Copyright 2008-2009 Proven Corporation Co., Ltd., Thailand
 #
 # This file is part of App Engine Console.
 #
