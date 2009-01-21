@@ -4,6 +4,9 @@ Bugs
 * Dynamic height of the console, supporting small and large resolution
 * No unit tests
 * Deleting an unpicklable from the session does not work
+* Should support full-height in the cleanest way possible
+  * Test against 1024x600 to simulate an Eee
+  * Maybe test against whatever the iPhone is
 
 Features
 ========
