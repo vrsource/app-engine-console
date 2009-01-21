@@ -23,3 +23,9 @@ Features
 * Perhaps a emacs/readline-style interface (^A, ^E, ^U, ^K) at the prompt
 * Some sort of GData integration
 * Update to the latest Pygments
+
+Wishlist
+========
+
+* Integration with unittest to run unit tests server-side
+* Autocompletion
