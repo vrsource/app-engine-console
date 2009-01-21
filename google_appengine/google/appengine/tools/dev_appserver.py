@@ -46,6 +46,7 @@ import httplib
 import imp
 import inspect
 import itertools
+import locale
 import logging
 import mimetools
 import mimetypes
@@ -75,10 +76,11 @@ from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import appinfo
 from google.appengine.api import datastore_admin
 from google.appengine.api import datastore_file_stub
-from google.appengine.api import urlfetch_stub
 from google.appengine.api import mail_stub
+from google.appengine.api import urlfetch_stub
 from google.appengine.api import user_service_stub
 from google.appengine.api import yaml_errors
+from google.appengine.api.capabilities import capability_stub
 from google.appengine.api.memcache import memcache_stub
 
 from google.appengine.tools import dev_appserver_index
@@ -110,6 +112,10 @@ for ext, mime_type in (('.asc', 'text/plain'),
                        ('.text', 'text/plain'),
                        ('.wbmp', 'image/vnd.wap.wbmp')):
   mimetypes.add_type(mime_type, ext)
+
+MAX_RUNTIME_RESPONSE_SIZE = 1 << 20
+
+MAX_REQUEST_SIZE = 10 * 1024 * 1024
 
 
 class Error(Exception):
@@ -462,7 +468,8 @@ class ApplicationLoggingHandler(logging.Handler):
     outfile.write('</span>\n')
 
 
-_IGNORE_HEADERS = frozenset(['content-type', 'content-length'])
+_IGNORE_REQUEST_HEADERS = frozenset(['content-type', 'content-length',
+                                     'accept-encoding', 'transfer-encoding'])
 
 def SetupEnvironment(cgi_path,
                      relative_url,
@@ -499,7 +506,7 @@ def SetupEnvironment(cgi_path,
     env['USER_IS_ADMIN'] = '1'
 
   for key in headers:
-    if key in _IGNORE_HEADERS:
+    if key in _IGNORE_REQUEST_HEADERS:
       continue
     adjusted_name = key.replace('-', '_').upper()
     env['HTTP_' + adjusted_name] = ', '.join(headers.getheaders(key))
@@ -568,6 +575,13 @@ def FakeURandom(n):
 def FakeUname():
   """Fake version of os.uname."""
   return ('Linux', '', '', '', '')
+
+
+def FakeSetLocale(category, value=None, original_setlocale=locale.setlocale):
+  """Fake version of locale.setlocale that only supports the default."""
+  if value not in (None, '', 'C', 'POSIX'):
+    raise locale.Error, 'locale emulation only supports "C" locale'
+  return original_setlocale(category, 'C')
 
 
 def IsPathInSubdirectories(filename,
@@ -681,7 +695,8 @@ class FakeFile(file):
                       if os.path.isfile(filename))
 
   ALLOWED_DIRS = set([
-    os.path.normcase(os.path.realpath(os.path.dirname(os.__file__)))
+    os.path.normcase(os.path.realpath(os.path.dirname(os.__file__))),
+    os.path.normcase(os.path.abspath(os.path.dirname(os.__file__))),
   ])
 
   NOT_ALLOWED_DIRS = set([
@@ -713,8 +728,10 @@ class FakeFile(file):
     Args:
       root_path: Path to the root of the application.
     """
-    FakeFile._application_paths = set(os.path.abspath(path)
-                                      for path in application_paths)
+    FakeFile._application_paths = (set(os.path.realpath(path)
+                                       for path in application_paths) |
+                                   set(os.path.abspath(path)
+                                       for path in application_paths))
 
   @staticmethod
   def IsFileAccessible(filename, normcase=os.path.normcase):
@@ -756,7 +773,7 @@ class FakeFile(file):
 
     return False
 
-  def __init__(self, filename, mode='r', **kwargs):
+  def __init__(self, filename, mode='r', bufsize=-1, **kwargs):
     """Initializer. See file built-in documentation."""
     if mode not in FakeFile.ALLOWED_MODES:
       raise IOError('invalid mode: %s' % mode)
@@ -764,7 +781,7 @@ class FakeFile(file):
     if not FakeFile.IsFileAccessible(filename):
       raise IOError(errno.EACCES, 'file not accessible')
 
-    super(FakeFile, self).__init__(filename, mode, **kwargs)
+    super(FakeFile, self).__init__(filename, mode, bufsize, **kwargs)
 
 
 class RestrictedPathFunction(object):
@@ -1024,9 +1041,14 @@ class HardenedModulesHook(object):
   ]
 
   _MODULE_OVERRIDES = {
+    'locale': {
+      'setlocale': FakeSetLocale,
+    },
+
     'os': {
       'listdir': RestrictedPathFunction(os.listdir),
-      'lstat': RestrictedPathFunction(os.lstat),
+
+      'lstat': RestrictedPathFunction(os.stat),
       'stat': RestrictedPathFunction(os.stat),
       'uname': FakeUname,
       'urandom': FakeURandom,
@@ -1535,7 +1557,8 @@ def FindMissingInitFiles(cgi_path, module_fullname, isfile=os.path.isfile):
     depth_count += 1
 
   for index in xrange(depth_count):
-    current_init_file = os.path.join(module_base, '__init__.py')
+    current_init_file = os.path.abspath(
+        os.path.join(module_base, '__init__.py'))
 
     if not isfile(current_init_file):
       missing_init_files.append(current_init_file)
@@ -2114,6 +2137,12 @@ class FileDispatcher(URLDispatcher):
     return 'File dispatcher'
 
 
+_IGNORE_RESPONSE_HEADERS = frozenset([
+    'content-encoding', 'accept-encoding', 'transfer-encoding',
+    'server', 'date',
+    ])
+
+
 def RewriteResponse(response_file):
   """Interprets server-side headers and adjusts the HTTP response accordingly.
 
@@ -2129,6 +2158,8 @@ def RewriteResponse(response_file):
   Args:
     response_file: File-like object containing the full HTTP response including
       the response code, all headers, and the request body.
+    gmtime: Function which returns current time in a format matching standard
+      time.gmtime().
 
   Returns:
     Tuple (status_code, status_message, header, body) where:
@@ -2140,6 +2171,10 @@ def RewriteResponse(response_file):
       body: String containing the body of the response.
   """
   headers = mimetools.Message(response_file)
+
+  for h in _IGNORE_RESPONSE_HEADERS:
+    if h in headers:
+      del headers[h]
 
   response_status = '%d Good to go' % httplib.OK
 
@@ -2164,7 +2199,7 @@ def RewriteResponse(response_file):
   else:
     body = response_file.read()
 
-  headers['content-length'] = str(len(body))
+  headers['Content-Length'] = str(len(body))
 
   header_list = []
   for header in headers.headers:
@@ -2333,6 +2368,10 @@ def CreateRequestHandler(root_path, login_url, require_indexes=False,
       """
       BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
+    def version_string(self):
+      """Returns server's version string used for Server HTTP header"""
+      return self.server_version
+
     def do_GET(self):
       """Handle GET requests."""
       self._HandleRequest()
@@ -2403,6 +2442,15 @@ def CreateRequestHandler(root_path, login_url, require_indexes=False,
 
         infile = cStringIO.StringIO(self.rfile.read(
             int(self.headers.get('content-length', 0))))
+
+        request_size = len(infile.getvalue())
+        if request_size > MAX_REQUEST_SIZE:
+          msg = ('HTTP request was too large: %d.  The limit is: %d.'
+                 % (request_size, MAX_REQUEST_SIZE))
+          logging.error(msg)
+          self.send_response(httplib.REQUEST_ENTITY_TOO_LARGE, msg)
+          return
+
         outfile = cStringIO.StringIO()
         try:
           dispatcher.Dispatch(self.path,
@@ -2416,7 +2464,20 @@ def CreateRequestHandler(root_path, login_url, require_indexes=False,
 
         outfile.flush()
         outfile.seek(0)
+
         status_code, status_message, header_data, body = RewriteResponse(outfile)
+
+        runtime_response_size = len(outfile.getvalue())
+        if runtime_response_size > MAX_RUNTIME_RESPONSE_SIZE:
+          status_code = 403
+          status_message = 'Forbidden'
+          new_headers = []
+          for header in header_data.split('\n'):
+            if not header.lower().startswith('content-length'):
+              new_headers.append(header)
+          header_data = '\n'.join(new_headers)
+          body = ('HTTP response was too large: %d.  The limit is: %d.'
+                  % (runtime_response_size, MAX_RUNTIME_RESPONSE_SIZE))
 
       except yaml_errors.EventListenerError, e:
         title = 'Fatal error when loading application configuration'
@@ -2717,6 +2778,10 @@ def SetupStubs(app_id, **config):
   apiproxy_stub_map.apiproxy.RegisterStub(
     'memcache',
     memcache_stub.MemcacheServiceStub())
+
+  apiproxy_stub_map.apiproxy.RegisterStub(
+    'capability_service',
+    capability_stub.CapabilityServiceStub())
 
   try:
     from google.appengine.api.images import images_stub
