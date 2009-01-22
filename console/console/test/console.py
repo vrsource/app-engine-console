@@ -37,6 +37,13 @@ class AppEngineConsoleTestCase(AppEngineTest):
     def testSimplestStatementThrowsNoExceptions(self):
         self.engine.runsource('')
 
+    def testBasicStatements(self):
+        self.engine.runsource('5')
+        self.assertEqual(self.engine.out, '5\n')
+
+        self.engine.runsource('8 * 3')
+        self.assertEqual(self.engine.out, '24\n')
+
 def suite():
     s = unittest.TestSuite()
     s.addTest( unittest.makeSuite(AppEngineConsoleTestCase, 'test') )
