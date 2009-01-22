@@ -93,6 +93,53 @@ form#console_form {
     padding: 0.5em 1em;
 }
 
+table.settings {
+    font-size: 123.1%; /* 16px */
+    width: 60em;
+
+    border-width: 1px 1px 1px 1px;
+    border-spacing: 2px;
+    border-style: outset;
+    border-color: #000000;
+    border-collapse: collapse;
+}
+
+table.settings thead {
+    border-width: 1px;
+    border-style: inset;
+    border-color: #000000;
+}
+
+table.settings th {
+    font-weight: bold;
+    padding: 1px;
+}
+
+table.settings td {
+    padding: 1px;
+    border-width: 1px;
+    border-style: inset;
+    border-color: #c0c0c0;
+}
+
+table.settings td.variable {
+    font-size: 93%;
+    font-family: monospace, "lucida console", Courier;
+    font-weight: bold;
+}
+
+table.settings tr {
+    vertical-align: top;
+}
+
+table.settings .default {
+}
+
+table.settings td.default {
+    font-family: monospace, "lucida console", Courier;
+    font-size: 85%;
+}
+
 .helpcontent {
     width: 45em;
 }

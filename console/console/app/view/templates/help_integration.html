@@ -97,35 +97,101 @@
         to inspect and manage datastore and memcache content.  However, before you deploy App Engine Console in production
         in your application, please go through the <tt>config.py</tt> file and make sure you are satisfied with these settings:
     </p>
-    <ul>
-        <li><strong><tt>hide_from_invalid_users</tt></strong> (Default <tt>False</tt>): When <tt>True</tt>, all console-related pages will return 404
-             (file not found) messages to unauthorized users.  This "cloak mode" makes it hard or impossible for normal users
-             to detect that the console is integrated with your site.
-        </li>
-        <li>
-            <strong><tt>allow_any_user</tt></strong> (default: <tt>False</tt>): When <tt>True</tt>, any user can use the production
-            Python console once he has loggged in.  <em>(Not recommended)</em>
-        </li>
-        <li>
-            <strong><tt>analytics_id</tt></strong> (default: <tt>""</tt>): If you use Google Analytics, go to the dashboard for your site.  Check the
-            "id" value in the URL (<em>not "scid"</em>).  When you set <tt>analytics_id</tt> to that value, the Dashboard will then give you an easy
-            way to jump straight to your site's latest Google Analytics reports.
-        </li>
-        <li>
-            <strong><tt>pastebin_subdomain</tt></strong> (default: <tt>""</tt>): If this string is non-empty, the integrated pastebin window will
-            use that as a semi-private subdomain for the site.  This can be useful to avoid the clutter of other peoples' pasted material on the site.
-        </li>
-        <li>
-            <strong><tt>require_login_during_development</tt></strong> (default <tt>False</tt>): When <tt>True</tt>, users must "log in" even when running
-            in development mode from the App Engine SDK.
-        </li>
-        <li>
-            <strong><tt>python_doc_linking</tt></strong> (default <tt>True</tt>): When <tt>True</tt>, many common modules, exceptions,
-            and types will be rendered as HTML links to the on-line Python documentation for those objects.
-        </li>
-        <li>
-            <strong><tt>python_doc</tt></strong> (default <tt>"http://docs.python.org/dev"</tt>): This URL is used as the base directory for
-            links to the Python documentation.  If you have your own copy of the documentation, you can set this to have the links go there instead.
-        </li>
-    </ul>
+    <table class="settings">
+        <thead>
+            <tr>
+                <th>Variable</th>
+                <th class="default">Default Value</th>
+                <th class="desc">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="variable">
+                    hide_from_invalid_users
+                </td>
+                <td class="default">
+                    False
+                </td>
+                <td class="desc">
+                    When <tt>True</tt>, all console-related pages will return 404
+                    (file not found) messages to unauthorized users.  This "cloak mode" makes it hard or impossible for normal users
+                    to detect that the console is integrated with your site.
+                </td>
+            </tr>
+            <tr>
+                <td class="variable">
+                    allow_any_user
+                </td>
+                <td class="default">
+                    False
+                </td>
+                <td class="desc">
+                    When <tt>True</tt>, any user can use the production
+                    Python console once he has loggged in.  <em>(Not recommended)</em>
+                </td>
+            </tr>
+            <tr>
+                <td class="variable">
+                    analytics_id
+                </td>
+                <td class="default">
+                    ""
+                </td>
+                <td class="desc">
+                    If you use Google Analytics, go to the dashboard for your site.  Check the
+                    "id" value in the URL (<em>not "scid"</em>).  When you set <tt>analytics_id</tt> to that value, the Dashboard will then give you an easy
+                    way to jump straight to your site's latest Google Analytics reports.
+                </td>
+            </tr>
+            <tr>
+                <td class="variable">
+                    pastebin_subdomain
+                </td>
+                <td class="default">
+                    ""
+                </td>
+                <td class="desc">
+                    If this string is non-empty, the integrated pastebin window will
+                    use that as a semi-private subdomain for the site.  This can be useful to avoid the clutter of other peoples' pasted material.
+                </td>
+            </tr>
+            <tr>
+                <td class="variable">
+                    require_login_during_development
+                </td>
+                <td class="default">
+                    False
+                </td>
+                <td class="desc">
+                    When <tt>True</tt>, users must "log in" even when running
+                    in development mode from the App Engine SDK.
+                </td>
+            </tr>
+            <tr>
+                <td class="variable">
+                    python_doc_linking
+                </td>
+                <td class="default">
+                    True
+                </td>
+                <td class="desc">
+                    When <tt>True</tt>, many common modules, exceptions,
+                    and types will be rendered as HTML links to the on-line Python documentation for those objects.
+                </td>
+            </tr>
+            <tr>
+                <td class="variable">
+                    python_doc
+                </td>
+                <td class="default">
+                    "http://docs.python.org/dev"
+                </td>
+                <td class="desc">
+                    This URL is used as the base directory for
+                    links to the Python documentation.  If you have your own copy of the documentation, you can set this to have the links go there instead.
+                </td>
+            </tr>
+        </tbody>
+    </table>
 {% endblock %}
