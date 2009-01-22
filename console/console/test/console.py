@@ -34,6 +34,9 @@ class AppEngineConsoleTestCase(AppEngineTest):
     def testTest(self):
         self.assert_(True)
 
+    def testSimplestStatementThrowsNoExceptions(self):
+        self.engine.runsource('')
+
 def suite():
     s = unittest.TestSuite()
     s.addTest( unittest.makeSuite(AppEngineConsoleTestCase, 'test') )

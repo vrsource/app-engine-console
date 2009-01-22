@@ -41,6 +41,7 @@ def initialSetup():
     os.environ['TZ']                 = 'UTC'
     os.environ['USER_EMAIL']         = LOGGED_IN_USER
     os.environ['AUTH_DOMAIN']        = AUTH_DOMAIN
+    os.environ['REMOTE_ADDR']        = '127.0.0.1'
     os.environ['APPLICATION_ID']     = APP_ID
     os.environ['SERVER_SOFTWARE']    = 'App Engine Testing'
     os.environ['CURRENT_VERSION_ID'] = os.environ['app_version']
