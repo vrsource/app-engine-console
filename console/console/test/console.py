@@ -60,6 +60,16 @@ class AppEngineConsoleTestCase(AppEngineTest):
         self.engine.runsource('foo')
         self.assertOutput('23')
 
+    def testListsMutateOverMultipleStatements(self):
+        self.engine.runsource('li = [1, 2, 3]')
+        self.assertOutput('')
+
+        self.engine.runsource('li.append(4)')
+        self.assertOutput('')
+
+        self.engine.runsource('li')
+        self.assertOutput('[1, 2, 3, 4]')
+
 def suite():
     s = unittest.TestSuite()
     s.addTest( unittest.makeSuite(AppEngineConsoleTestCase, 'test') )

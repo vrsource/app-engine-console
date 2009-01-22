@@ -137,6 +137,20 @@ class AppEngineConsole(ShellSession):
             # Execute it.
             buf = StringIO.StringIO()
             old_globals = dict(statement_module.__dict__)
+
+            # Later on, we compare new variable ("global") values to these values to see what's changed
+            # and should be saved in the store; however, since old_globals is merely a shallow copy,
+            # naively comparing for inequality between old/new values will not work: mutating a list
+            # or dict for example will change the underlying object in *both* dicts and so the != comparison
+            # will return false.  In other words:
+            # >>> a = {'foo': [1, 2]}; b = dict(a); print a['foo'] is b['foo']
+            # True
+            #
+            # The current solution is to remember the repr() string for these values and compare
+            # the before and after repr()s to determine what's changed.  Other ideas include comparing the
+            # objects' pickle strings, or maybe de-optimizing this completely and just always re-store every global.
+            old_global_values = dict([(a, repr(b)) for a, b in old_globals.items()])
+
             try:
                 old_stdout = sys.stdout
                 old_stderr = sys.stderr
@@ -165,7 +179,7 @@ class AppEngineConsole(ShellSession):
             # Extract the new globals that this statement added.
             new_globals = {}
             for name, val in statement_module.__dict__.items():
-                if name not in old_globals or val != old_globals[name]:
+                if name not in old_global_values or repr(val) != old_global_values[name]:
                     new_globals[name] = val
 
             if True in [isinstance(val, UNPICKLABLE_TYPES) for val in new_globals.values()]:
