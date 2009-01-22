@@ -23,6 +23,7 @@ import new
 import code
 import types
 import logging
+import cPickle
 import StringIO
 import datetime
 import traceback
@@ -49,6 +50,15 @@ class AppEngineConsole(ShellSession):
     def __init__(self, *args, **kw):
         ShellSession.__init__(self, *args, **kw)
         self.fresh()
+
+    def storedValue(self, obj):
+        """Returns a string representing the given object's value, which should allow the
+        code below to determine whether the object changes over time.
+        """
+        if isinstance(obj, UNPICKLABLE_TYPES):
+            return repr(obj)
+        else:
+            return cPickle.dumps(obj)
 
     def fresh(self):
         self.out = ''
@@ -146,10 +156,10 @@ class AppEngineConsole(ShellSession):
             # >>> a = {'foo': [1, 2]}; b = dict(a); print a['foo'] is b['foo']
             # True
             #
-            # The current solution is to remember the repr() string for these values and compare
-            # the before and after repr()s to determine what's changed.  Other ideas include comparing the
-            # objects' pickle strings, or maybe de-optimizing this completely and just always re-store every global.
-            old_global_values = dict([(a, repr(b)) for a, b in old_globals.items()])
+            # The current solution is to remember the object's pickled representation and compare
+            # the before and after pickled strings.  Another idea is maybe de-optimizing this completely and
+            # just always re-store every global.
+            old_global_values = dict([(a, self.storedValue(b)) for a, b in old_globals.items()])
 
             try:
                 old_stdout = sys.stdout
@@ -179,7 +189,7 @@ class AppEngineConsole(ShellSession):
             # Extract the new globals that this statement added.
             new_globals = {}
             for name, val in statement_module.__dict__.items():
-                if name not in old_global_values or repr(val) != old_global_values[name]:
+                if name not in old_global_values or self.storedValue(val) != old_global_values[name]:
                     new_globals[name] = val
 
             if True in [isinstance(val, UNPICKLABLE_TYPES) for val in new_globals.values()]:

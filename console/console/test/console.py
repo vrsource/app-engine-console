@@ -70,6 +70,24 @@ class AppEngineConsoleTestCase(AppEngineTest):
         self.engine.runsource('li')
         self.assertOutput('[1, 2, 3, 4]')
 
+    def testObjectsMutateOverMultipleStatements(self):
+        self.engine.runsource('class A:')
+        self.engine.runsource(' def __init__(self):')
+        self.engine.runsource('  self.x = 1')
+        self.engine.runsource('')
+
+        self.engine.runsource('a = A()')
+        self.engine.runsource('a.x')
+        self.assertOutput('1')
+
+        self.engine.runsource('a.x = 2')
+        self.engine.runsource('a.x')
+        self.assertOutput('2')
+
+        self.engine.runsource('a.y = 12')
+        self.engine.runsource('print a.y')
+        self.assertOutput('12')
+
 def suite():
     s = unittest.TestSuite()
     s.addTest( unittest.makeSuite(AppEngineConsoleTestCase, 'test') )
