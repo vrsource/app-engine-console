@@ -31,6 +31,9 @@ class AppEngineConsoleTestCase(AppEngineTest):
         AppEngineTest.setUp(self)
         self.engine = model.AppEngineConsole()
 
+    def assertOutput(self, str, msg=''):
+        self.assertEqual(self.engine.out.strip(), str, msg)
+
     def testTest(self):
         self.assert_(True)
 
@@ -38,11 +41,24 @@ class AppEngineConsoleTestCase(AppEngineTest):
         self.engine.runsource('')
 
     def testBasicStatements(self):
+        self.engine.runsource('')
+        self.assertOutput('')
+
         self.engine.runsource('5')
-        self.assertEqual(self.engine.out, '5\n')
+        self.assertOutput('5')
 
         self.engine.runsource('8 * 3')
-        self.assertEqual(self.engine.out, '24\n')
+        self.assertOutput('24')
+
+    def testAssignmentStatements(self):
+        self.engine.runsource('foo = 23')
+        self.assertOutput('')
+
+        self.engine.runsource('print foo')
+        self.assertOutput('23')
+
+        self.engine.runsource('foo')
+        self.assertOutput('23')
 
 def suite():
     s = unittest.TestSuite()
