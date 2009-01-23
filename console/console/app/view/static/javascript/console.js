@@ -118,14 +118,15 @@ var statementSubmit = function(event) {
             if(highlight)
                 statementContainer.addClass('pygments').removeClass('plain');
 
-            // Append the server output.
+            // Append the server output.  For non-highlighting mode, the response is manually appended inside
+            // the PRE tag to fix a rendering bug with IE.
             var output;
             if(highlight)
-                output = $('<div>').addClass('pygments');
+                output = $('<div>').addClass('pygments').append(response.out);
             else
-                output = $('<pre>');
+                output = $('<pre>' + response.out + '</pre>');
 
-            output.addClass('output').append(response.out)
+            output.addClass('output');
             $('#console_output').append(output);
 
             scrollOutput();
