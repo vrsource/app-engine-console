@@ -28,6 +28,17 @@ var hist = {
     'pending' : ''
 };
 
+/* Change this to false to use alert popups for Safari logging. */
+var SILENT_ALERTS = true;
+
+var silentLogger  = function(msg) { };
+
+/* Safari seems not to have these. */
+if(console.debug === undefined)
+    console.debug = SILENT_ALERTS ? silentLogger : function(msg) { alert('Debug: ' + msg); };
+if(console.error === undefined)
+    console.error = SILENT_ALERTS ? silentLogger : function(msg) { alert('Error: ' + msg); };
+
 // Processing begins here.
 var main = function() {
     console.debug('Starting');
