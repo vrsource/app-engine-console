@@ -3,6 +3,7 @@ Bugs
 
 * Dynamic height of the console, supporting small and large resolution
 * Deleting things from the session does not work
+* iframes in Safari aren't switching out properly when togglling between pastebin and chatinator
 * Should support full-height in the cleanest way possible
   * Test against 1024x600 to simulate an Eee
   * Maybe test against whatever the iPhone is
