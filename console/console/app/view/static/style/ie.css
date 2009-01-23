@@ -18,31 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#console_interface {
-    float: left;
-}
-
-#console_area {
-    height: 450px;
-}
-
-#talkinator {
-    height: 492px;
-}
-
-#console_output pre.banner {
-    word-wrap: break-word;
-    zoom: 1;
-}
-
-.helpcontent strong tt {
-    font-size: 90%;
-}
-
-div.mainmenu {
-    padding-top: 0;
-}
-
 .issue-list {
     padding-bottom: 0;
 }
