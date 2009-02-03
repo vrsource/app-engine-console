@@ -1,17 +1,17 @@
-Bugs
-====
+This is a dead-simple bug and feature tracker for the project.  For formatting help, see http://github.com/guides/textile-formatting
+
+h2. Bugs
 
 * Dynamic height of the console, supporting small and large resolution
 * Deleting things from the session does not work
 * iframes in Safari aren't switching out properly when togglling between pastebin and chatinator
 * Sometimes Safari stops accepting input for some reason (also Chrome sometimes if using Talkinator)
 * Should support full-height in the cleanest way possible
-  * Test against 1024x600 to simulate an Eee
-  * Maybe test against whatever the iPhone is
+** Test against 1024x600 to simulate an Eee
+** Maybe test against whatever the iPhone is
 * Unit tests should run from the zip release files
 
-Features
-========
+h2. Features
 
 * Chrome and Safari support (20% and 8% of the visits respectively)
 * Maybe cache the pages in the Help tab in memcache or the data store
@@ -23,8 +23,7 @@ Features
 * Some sort of GData integration
 * Update to the latest Pygments
 
-Wishlist
-========
+h2. Wishlist
 
 * Integration with unittest to run unit tests server-side
 * Autocompletion
