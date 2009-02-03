@@ -1,4 +1,5 @@
-This is a dead-simple bug and feature tracker for the project.  For formatting help, see http://github.com/guides/textile-formatting
+This is a dead-simple bug and feature tracker for the project.  For formatting help, see
+"Github's Textile Formatting documentation":http://github.com/guides/textile-formatting
 
 h2. Bugs
 
