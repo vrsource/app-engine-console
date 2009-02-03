@@ -28,3 +28,7 @@ Wishlist
 
 * Integration with unittest to run unit tests server-side
 * Autocompletion
+* Import/Export Data to/from the DataStore from different data
+  sources(SQL, CSV, XLS, XML ).
+* Get a report with the number of types of entities, as well as the
+  number of records containing
