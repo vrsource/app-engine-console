@@ -32,3 +32,8 @@ python_doc_linking = True
 # The location of the newer (Sphinx) Python documentation.  If you have a local
 # copy, you can set this to use your own version instead.
 python_doc = 'http://docs.python.org'
+
+# If your own app uses Django, this variable ensures that both the console and the
+# main app will use the same version. If None, no version forcing will be done,
+# otherwise, currently supported version are (0, 96), (1, 0), and (1, 1).
+django_version = (1, 1)

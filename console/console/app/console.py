@@ -20,13 +20,26 @@
 import os
 import re
 import sys
-import cgi
-import code
-import logging
 
 from os.path import join, dirname
 sys.path.insert(0, dirname(__file__))
 sys.path.insert(0, dirname(dirname(__file__)))
+
+# Force the correct Django version to avoid the dreaded UnacceptableVersionError.
+import config
+if config.django_version:
+  django_major, django_minor = config.django_version
+  django_version = '%s.%s' % (django_major, django_minor)
+
+  from google.appengine.dist import use_library
+  use_library('django', django_version)
+  import django
+  assert int(django.VERSION[0]) == django_major
+  assert int(django.VERSION[1]) == django_minor
+
+import cgi
+import code
+import logging
 
 import util
 import controller
