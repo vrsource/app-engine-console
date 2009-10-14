@@ -20,4 +20,5 @@
 source version.sh
 
 find "$my_app" -type f -name '*.py[co]' -exec rm {} \;
-exec dev_appserver.py --port=3000 "$my_app"
+server=`which dev_appserver.py`
+exec python2.5 "$server" --port=3000 "$my_app" $@
