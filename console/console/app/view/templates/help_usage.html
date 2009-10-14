@@ -1,4 +1,7 @@
-{# Usage instructions template
+{% extends "help.html" %}
+
+{% comment %}
+ # Usage instructions template
  #
  # Copyright 2008-2009 Proven Corporation Co., Ltd., Thailand
  #
@@ -16,9 +19,7 @@
  # You should have received a copy of the GNU General Public License
  # along with App Engine Console; if not, write to the Free Software
  # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- #}
-
-{% extends "help.html" %}
+{% endcomment %}
 
 {% block helpcontent %}
     <h3>The Console</h3>
