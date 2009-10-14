@@ -22,7 +22,7 @@ import dummy_thread as thread
 __pychecker__ = """maxreturns=0 maxbranches=0 no-callinit
                    unusednames=printElemNumber,debug_strs no-special"""
 
-from google.appengine.api.api_base_pb import VoidProto
+from google.appengine.api.api_base_pb import *
 class MailServiceError(ProtocolBuffer.ProtocolMessage):
 
   OK           =    0
@@ -81,13 +81,17 @@ class MailServiceError(ProtocolBuffer.ProtocolMessage):
     return res
 
 
-  _TEXT = (
-   "ErrorCode",
-  )
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-  )
+
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+  }, 0)
+
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+  }, 0, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -107,8 +111,9 @@ class MailAttachment(ProtocolBuffer.ProtocolMessage):
     self.filename_ = x
 
   def clear_filename(self):
-    self.has_filename_ = 0
-    self.filename_ = ""
+    if self.has_filename_:
+      self.has_filename_ = 0
+      self.filename_ = ""
 
   def has_filename(self): return self.has_filename_
 
@@ -119,8 +124,9 @@ class MailAttachment(ProtocolBuffer.ProtocolMessage):
     self.data_ = x
 
   def clear_data(self):
-    self.has_data_ = 0
-    self.data_ = ""
+    if self.has_data_:
+      self.has_data_ = 0
+      self.data_ = ""
 
   def has_data(self): return self.has_data_
 
@@ -185,22 +191,24 @@ class MailAttachment(ProtocolBuffer.ProtocolMessage):
     if self.has_data_: res+=prefix+("Data: %s\n" % self.DebugFormatString(self.data_))
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kFileName = 1
   kData = 2
 
-  _TEXT = (
-   "ErrorCode",
-   "FileName",
-   "Data",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "FileName",
+    2: "Data",
+  }, 2)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STRING,
+    2: ProtocolBuffer.Encoder.STRING,
+  }, 2, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -230,8 +238,9 @@ class MailMessage(ProtocolBuffer.ProtocolMessage):
     self.sender_ = x
 
   def clear_sender(self):
-    self.has_sender_ = 0
-    self.sender_ = ""
+    if self.has_sender_:
+      self.has_sender_ = 0
+      self.sender_ = ""
 
   def has_sender(self): return self.has_sender_
 
@@ -242,8 +251,9 @@ class MailMessage(ProtocolBuffer.ProtocolMessage):
     self.replyto_ = x
 
   def clear_replyto(self):
-    self.has_replyto_ = 0
-    self.replyto_ = ""
+    if self.has_replyto_:
+      self.has_replyto_ = 0
+      self.replyto_ = ""
 
   def has_replyto(self): return self.has_replyto_
 
@@ -299,8 +309,9 @@ class MailMessage(ProtocolBuffer.ProtocolMessage):
     self.subject_ = x
 
   def clear_subject(self):
-    self.has_subject_ = 0
-    self.subject_ = ""
+    if self.has_subject_:
+      self.has_subject_ = 0
+      self.subject_ = ""
 
   def has_subject(self): return self.has_subject_
 
@@ -311,8 +322,9 @@ class MailMessage(ProtocolBuffer.ProtocolMessage):
     self.textbody_ = x
 
   def clear_textbody(self):
-    self.has_textbody_ = 0
-    self.textbody_ = ""
+    if self.has_textbody_:
+      self.has_textbody_ = 0
+      self.textbody_ = ""
 
   def has_textbody(self): return self.has_textbody_
 
@@ -323,8 +335,9 @@ class MailMessage(ProtocolBuffer.ProtocolMessage):
     self.htmlbody_ = x
 
   def clear_htmlbody(self):
-    self.has_htmlbody_ = 0
-    self.htmlbody_ = ""
+    if self.has_htmlbody_:
+      self.has_htmlbody_ = 0
+      self.htmlbody_ = ""
 
   def has_htmlbody(self): return self.has_htmlbody_
 
@@ -525,6 +538,10 @@ class MailMessage(ProtocolBuffer.ProtocolMessage):
       cnt+=1
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kSender = 1
   kReplyTo = 2
   kTo = 3
@@ -535,40 +552,31 @@ class MailMessage(ProtocolBuffer.ProtocolMessage):
   kHtmlBody = 8
   kAttachment = 9
 
-  _TEXT = (
-   "ErrorCode",
-   "Sender",
-   "ReplyTo",
-   "To",
-   "Cc",
-   "Bcc",
-   "Subject",
-   "TextBody",
-   "HtmlBody",
-   "Attachment",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "Sender",
+    2: "ReplyTo",
+    3: "To",
+    4: "Cc",
+    5: "Bcc",
+    6: "Subject",
+    7: "TextBody",
+    8: "HtmlBody",
+    9: "Attachment",
+  }, 9)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STRING,
+    2: ProtocolBuffer.Encoder.STRING,
+    3: ProtocolBuffer.Encoder.STRING,
+    4: ProtocolBuffer.Encoder.STRING,
+    5: ProtocolBuffer.Encoder.STRING,
+    6: ProtocolBuffer.Encoder.STRING,
+    7: ProtocolBuffer.Encoder.STRING,
+    8: ProtocolBuffer.Encoder.STRING,
+    9: ProtocolBuffer.Encoder.STRING,
+  }, 9, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""

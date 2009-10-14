@@ -28,9 +28,12 @@ import cStringIO
 import math
 import pickle
 import types
+import sha
 
 from google.appengine.api import api_base_pb
 from google.appengine.api import apiproxy_stub_map
+from google.appengine.api import capabilities
+from google.appengine.api import namespace_manager
 from google.appengine.api.memcache import memcache_service_pb
 from google.appengine.runtime import apiproxy_errors
 
@@ -76,6 +79,8 @@ TYPE_INT = 3
 TYPE_LONG = 4
 TYPE_BOOL = 5
 
+CAPABILITY = capabilities.CapabilitySet('memcache')
+
 
 def _key_string(key, key_prefix='', server_to_user_dict=None):
   """Utility function to handle different ways of requesting keys.
@@ -90,14 +95,14 @@ def _key_string(key, key_prefix='', server_to_user_dict=None):
       (which does not have the prefix).
 
   Returns:
-    The key as a non-unicode string prepended with key_prefix. This is the key
-    sent to and stored by the server.
+    The key as a non-unicode string prepended with key_prefix. This is
+    the key sent to and stored by the server. If the resulting key is
+    longer then MAX_KEY_SIZE, it will be hashed with sha1 and will be
+    replaced with the hex representation of the said hash.
 
   Raises:
     TypeError: If provided key isn't a string or tuple of (int, string)
       or key_prefix or server_to_user_dict are of the wrong type.
-    ValueError: If the key, when translated to the server key, is more than
-      250 bytes in length.
   """
   if type(key) is types.TupleType:
     key = key[1]
@@ -112,8 +117,7 @@ def _key_string(key, key_prefix='', server_to_user_dict=None):
     server_key = server_key.encode('utf-8')
 
   if len(server_key) > MAX_KEY_SIZE:
-    raise ValueError('Keys may not be more than %d bytes in length, '
-                     'received %d bytes' % (MAX_KEY_SIZE, len(server_key)))
+    server_key = sha.new(server_key).hexdigest()
 
   if server_to_user_dict is not None:
     if not isinstance(server_to_user_dict, dict):
@@ -345,7 +349,14 @@ class Client(object):
       return None
 
     if not response.has_stats():
-      return None
+      return {
+        STAT_HITS: 0,
+        STAT_MISSES: 0,
+        STAT_BYTE_HITS: 0,
+        STAT_ITEMS: 0,
+        STAT_BYTES: 0,
+        STAT_OLDEST_ITEM_AGES: 0,
+      }
 
     stats = response.stats()
     return {
@@ -371,7 +382,7 @@ class Client(object):
       return False
     return True
 
-  def get(self, key):
+  def get(self, key, namespace=None):
     """Looks up a single key in memcache.
 
     If you have multiple items to load, though, it's much more efficient
@@ -382,12 +393,15 @@ class Client(object):
     Args:
       key: The key in memcache to look up.  See docs on Client
         for details of format.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       The value of the key, if found in memcache, else None.
     """
     request = MemcacheGetRequest()
     request.add_key(_key_string(key))
+    namespace_manager._add_name_space(request, namespace)
     response = MemcacheGetResponse()
     try:
       self._make_sync_call('memcache', 'Get', request, response)
@@ -401,7 +415,7 @@ class Client(object):
                          response.item(0).flags(),
                          self._do_unpickle)
 
-  def get_multi(self, keys, key_prefix=''):
+  def get_multi(self, keys, key_prefix='', namespace=None):
     """Looks up multiple keys from memcache in one operation.
 
     This is the recommended way to do bulk loads.
@@ -414,6 +428,8 @@ class Client(object):
         and not in any particular encoding.
       key_prefix: Prefix to prepend to all keys when talking to the server;
         not included in the returned dictionary.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       A dictionary of the keys and values that were present in memcache.
@@ -421,6 +437,7 @@ class Client(object):
       the keys in the returned dictionary.
     """
     request = MemcacheGetRequest()
+    namespace_manager._add_name_space(request, namespace)
     response = MemcacheGetResponse()
     user_key = {}
     for key in keys:
@@ -437,7 +454,7 @@ class Client(object):
       return_value[user_key[returned_item.key()]] = value
     return return_value
 
-  def delete(self, key, seconds=0):
+  def delete(self, key, seconds=0, namespace=None):
     """Deletes a key from memcache.
 
     Args:
@@ -448,6 +465,8 @@ class Client(object):
         items can be immediately added.  With or without this option,
         a 'set' operation will always work.  Float values will be rounded up to
         the nearest whole second.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       DELETE_NETWORK_FAILURE (0) on network failure,
@@ -463,6 +482,7 @@ class Client(object):
       raise ValueError('Delete timeout must be non-negative.')
 
     request = MemcacheDeleteRequest()
+    namespace_manager._add_name_space(request, namespace)
     response = MemcacheDeleteResponse()
 
     delete_item = request.add_item()
@@ -480,7 +500,7 @@ class Client(object):
       return DELETE_ITEM_MISSING
     assert False, 'Unexpected deletion status code.'
 
-  def delete_multi(self, keys, seconds=0, key_prefix=''):
+  def delete_multi(self, keys, seconds=0, key_prefix='', namespace=None):
     """Delete multiple keys at once.
 
     Args:
@@ -493,6 +513,8 @@ class Client(object):
         the nearest whole second.
       key_prefix: Prefix to put on all keys when sending specified
         keys to memcache.  See docs for get_multi() and set_multi().
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       True if all operations completed successfully.  False if one
@@ -504,6 +526,7 @@ class Client(object):
       raise ValueError('Delete timeout must not be negative.')
 
     request = MemcacheDeleteRequest()
+    namespace_manager._add_name_space(request, namespace)
     response = MemcacheDeleteResponse()
 
     for key in keys:
@@ -516,7 +539,7 @@ class Client(object):
       return False
     return True
 
-  def set(self, key, value, time=0, min_compress_len=0):
+  def set(self, key, value, time=0, min_compress_len=0, namespace=None):
     """Sets a key's value, regardless of previous contents in cache.
 
     Unlike add() and replace(), this method always sets (or
@@ -532,13 +555,16 @@ class Client(object):
         memory pressure.  Float values will be rounded up to the nearest
         whole second.
       min_compress_len: Ignored option for compatibility.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       True if set.  False on error.
     """
-    return self._set_with_policy(MemcacheSetRequest.SET, key, value, time=time)
+    return self._set_with_policy(MemcacheSetRequest.SET, key, value, time=time,
+                                 namespace=namespace)
 
-  def add(self, key, value, time=0, min_compress_len=0):
+  def add(self, key, value, time=0, min_compress_len=0, namespace=None):
     """Sets a key's value, iff item is not already in memcache.
 
     Args:
@@ -550,13 +576,16 @@ class Client(object):
         memory pressure.  Float values will be rounded up to the nearest
         whole second.
       min_compress_len: Ignored option for compatibility.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       True if added.  False on error.
     """
-    return self._set_with_policy(MemcacheSetRequest.ADD, key, value, time=time)
+    return self._set_with_policy(MemcacheSetRequest.ADD, key, value, time=time,
+                                 namespace=namespace)
 
-  def replace(self, key, value, time=0, min_compress_len=0):
+  def replace(self, key, value, time=0, min_compress_len=0, namespace=None):
     """Replaces a key's value, failing if item isn't already in memcache.
 
     Args:
@@ -568,14 +597,16 @@ class Client(object):
         memory pressure.  Float values will be rounded up to the nearest
         whole second.
       min_compress_len: Ignored option for compatibility.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       True if replaced.  False on RPC error or cache miss.
     """
     return self._set_with_policy(MemcacheSetRequest.REPLACE,
-                                 key, value, time=time)
+                                 key, value, time=time, namespace=namespace)
 
-  def _set_with_policy(self, policy, key, value, time=0):
+  def _set_with_policy(self, policy, key, value, time=0, namespace=None):
     """Sets a single key with a specified policy.
 
     Helper function for set(), add(), and replace().
@@ -585,6 +616,8 @@ class Client(object):
       key: Key to add, set, or replace.  See docs on Client for details.
       value: Value to set.
       time: Expiration time, defaulting to 0 (never expiring).
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       True if stored, False on RPC error or policy error, e.g. a replace
@@ -604,6 +637,7 @@ class Client(object):
     item.set_flags(flags)
     item.set_set_policy(policy)
     item.set_expiration_time(int(math.ceil(time)))
+    namespace_manager._add_name_space(request, namespace)
     response = MemcacheSetResponse()
     try:
       self._make_sync_call('memcache', 'Set', request, response)
@@ -613,7 +647,8 @@ class Client(object):
       return False
     return response.set_status(0) == MemcacheSetResponse.STORED
 
-  def _set_multi_with_policy(self, policy, mapping, time=0, key_prefix=''):
+  def _set_multi_with_policy(self, policy, mapping, time=0, key_prefix='',
+                             namespace=None):
     """Set multiple keys with a specified policy.
 
     Helper function for set_multi(), add_multi(), and replace_multi(). This
@@ -628,6 +663,8 @@ class Client(object):
         memory pressure.  Float values will be rounded up to the nearest
         whole second.
       key_prefix: Prefix for to prepend to all keys.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       A list of keys whose values were NOT set.  On total success,
@@ -654,6 +691,7 @@ class Client(object):
       item.set_flags(flags)
       item.set_set_policy(policy)
       item.set_expiration_time(int(math.ceil(time)))
+    namespace_manager._add_name_space(request, namespace)
 
     response = MemcacheSetResponse()
     try:
@@ -670,7 +708,8 @@ class Client(object):
 
     return unset_list
 
-  def set_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
+  def set_multi(self, mapping, time=0, key_prefix='', min_compress_len=0,
+                namespace=None):
     """Set multiple keys' values at once, regardless of previous contents.
 
     Args:
@@ -682,15 +721,19 @@ class Client(object):
         whole second.
       key_prefix: Prefix for to prepend to all keys.
       min_compress_len: Unimplemented compatibility option.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       A list of keys whose values were NOT set.  On total success,
       this list should be empty.
     """
     return self._set_multi_with_policy(MemcacheSetRequest.SET, mapping,
-                                       time=time, key_prefix=key_prefix)
+                                       time=time, key_prefix=key_prefix,
+                                       namespace=namespace)
 
-  def add_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
+  def add_multi(self, mapping, time=0, key_prefix='', min_compress_len=0,
+                namespace=None):
     """Set multiple keys' values iff items are not already in memcache.
 
     Args:
@@ -702,15 +745,19 @@ class Client(object):
         whole second.
       key_prefix: Prefix for to prepend to all keys.
       min_compress_len: Unimplemented compatibility option.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       A list of keys whose values were NOT set because they did not already
       exist in memcache.  On total success, this list should be empty.
     """
     return self._set_multi_with_policy(MemcacheSetRequest.ADD, mapping,
-                                       time=time, key_prefix=key_prefix)
+                                       time=time, key_prefix=key_prefix,
+                                       namespace=namespace)
 
-  def replace_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
+  def replace_multi(self, mapping, time=0, key_prefix='', min_compress_len=0,
+                    namespace=None):
     """Replace multiple keys' values, failing if the items aren't in memcache.
 
     Args:
@@ -722,23 +769,27 @@ class Client(object):
         whole second.
       key_prefix: Prefix for to prepend to all keys.
       min_compress_len: Unimplemented compatibility option.
+      namespace: a string specifying an optional namespace to use in
+        the request.
 
     Returns:
       A list of keys whose values were NOT set because they already existed
       in memcache.  On total success, this list should be empty.
     """
     return self._set_multi_with_policy(MemcacheSetRequest.REPLACE, mapping,
-                                       time=time, key_prefix=key_prefix)
+                                       time=time, key_prefix=key_prefix,
+                                       namespace=namespace)
 
-  def incr(self, key, delta=1):
+  def incr(self, key, delta=1, namespace=None, initial_value=None):
     """Atomically increments a key's value.
 
     Internally, the value is a unsigned 64-bit integer.  Memcache
     doesn't check 64-bit overflows.  The value, if too large, will
     wrap around.
 
-    The key must already exist in the cache to be incremented.  To
-    initialize a counter, set() it to the initial value, as an
+    Unless an initial_value is specified, the key must already exist
+    in the cache to be incremented.  To initialize a counter, either
+    specify initial_value or set() it to the initial value, as an
     ASCII decimal integer.  Future get()s of the key, post-increment,
     will still be an ASCII decimal value.
 
@@ -746,6 +797,11 @@ class Client(object):
       key: Key to increment.  See Client's docstring for details.
       delta: Non-negative integer value (int or long) to increment key by,
         defaulting to 1.
+      namespace: a string specifying an optional namespace to use in
+        the request.
+      initial_value: initial value to put in the cache, if it doesn't
+        already exist.  The default value, None, will not create a cache
+        entry if it doesn't already exist.
 
     Returns:
       New long integer value, or None if key was not in the cache, could not
@@ -756,9 +812,10 @@ class Client(object):
       ValueError: If number is negative.
       TypeError: If delta isn't an int or long.
     """
-    return self._incrdecr(key, False, delta)
+    return self._incrdecr(key, False, delta, namespace=namespace,
+                          initial_value=initial_value)
 
-  def decr(self, key, delta=1):
+  def decr(self, key, delta=1, namespace=None, initial_value=None):
     """Atomically decrements a key's value.
 
     Internally, the value is a unsigned 64-bit integer.  Memcache
@@ -771,6 +828,11 @@ class Client(object):
       key: Key to decrement.  See Client's docstring for details.
       delta: Non-negative integer value (int or long) to decrement key by,
         defaulting to 1.
+      namespace: a string specifying an optional namespace to use in
+        the request.
+      initial_value: initial value to put in the cache, if it doesn't
+        already exist.  The default value, None, will not create a cache
+        entry if it doesn't already exist.
 
     Returns:
       New long integer value, or None if key wasn't in cache and couldn't
@@ -780,9 +842,11 @@ class Client(object):
       ValueError: If number is negative.
       TypeError: If delta isn't an int or long.
     """
-    return self._incrdecr(key, True, delta)
+    return self._incrdecr(key, True, delta, namespace=namespace,
+                          initial_value=initial_value)
 
-  def _incrdecr(self, key, is_negative, delta):
+  def _incrdecr(self, key, is_negative, delta, namespace=None,
+                initial_value=None):
     """Increment or decrement a key by a provided delta.
 
     Args:
@@ -790,6 +854,11 @@ class Client(object):
       is_negative: Boolean, if this is a decrement.
       delta: Non-negative integer amount (int or long) to increment
         or decrement by.
+      namespace: a string specifying an optional namespace to use in
+        the request.
+      initial_value: initial value to put in the cache, if it doesn't
+        already exist.  The default value, None, will not create a cache
+        entry if it doesn't already exist.
 
     Returns:
       New long integer value, or None on cache miss or network/RPC/server
@@ -805,6 +874,7 @@ class Client(object):
       raise ValueError('Delta must not be negative.')
 
     request = MemcacheIncrementRequest()
+    namespace_manager._add_name_space(request, namespace)
     response = MemcacheIncrementResponse()
     request.set_key(_key_string(key))
     request.set_delta(delta)
@@ -812,6 +882,8 @@ class Client(object):
       request.set_direction(MemcacheIncrementRequest.DECREMENT)
     else:
       request.set_direction(MemcacheIncrementRequest.INCREMENT)
+    if initial_value is not None:
+      request.set_initial_value(long(initial_value))
 
     try:
       self._make_sync_call('memcache', 'Increment', request, response)

@@ -59,8 +59,9 @@ class CapabilityConfigList(ProtocolBuffer.ProtocolMessage):
   def mutable_default_config(self): self.has_default_config_ = 1; return self.default_config()
 
   def clear_default_config(self):
-    self.has_default_config_ = 0;
-    if self.default_config_ is not None: self.default_config_.Clear()
+    if self.has_default_config_:
+      self.has_default_config_ = 0;
+      if self.default_config_ is not None: self.default_config_.Clear()
 
   def has_default_config(self): return self.has_default_config_
 
@@ -142,22 +143,24 @@ class CapabilityConfigList(ProtocolBuffer.ProtocolMessage):
       res+=prefix+">\n"
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kconfig = 1
   kdefault_config = 2
 
-  _TEXT = (
-   "ErrorCode",
-   "config",
-   "default_config",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "config",
+    2: "default_config",
+  }, 2)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STRING,
+    2: ProtocolBuffer.Encoder.STRING,
+  }, 2, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -203,8 +206,9 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     self.package_ = x
 
   def clear_package(self):
-    self.has_package_ = 0
-    self.package_ = ""
+    if self.has_package_:
+      self.has_package_ = 0
+      self.package_ = ""
 
   def has_package(self): return self.has_package_
 
@@ -215,8 +219,9 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     self.capability_ = x
 
   def clear_capability(self):
-    self.has_capability_ = 0
-    self.capability_ = ""
+    if self.has_capability_:
+      self.has_capability_ = 0
+      self.capability_ = ""
 
   def has_capability(self): return self.has_capability_
 
@@ -227,8 +232,9 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     self.status_ = x
 
   def clear_status(self):
-    self.has_status_ = 0
-    self.status_ = 4
+    if self.has_status_:
+      self.has_status_ = 0
+      self.status_ = 4
 
   def has_status(self): return self.has_status_
 
@@ -239,8 +245,9 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     self.scheduled_time_ = x
 
   def clear_scheduled_time(self):
-    self.has_scheduled_time_ = 0
-    self.scheduled_time_ = ""
+    if self.has_scheduled_time_:
+      self.has_scheduled_time_ = 0
+      self.scheduled_time_ = ""
 
   def has_scheduled_time(self): return self.has_scheduled_time_
 
@@ -251,8 +258,9 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     self.internal_message_ = x
 
   def clear_internal_message(self):
-    self.has_internal_message_ = 0
-    self.internal_message_ = ""
+    if self.has_internal_message_:
+      self.has_internal_message_ = 0
+      self.internal_message_ = ""
 
   def has_internal_message(self): return self.has_internal_message_
 
@@ -263,8 +271,9 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     self.admin_message_ = x
 
   def clear_admin_message(self):
-    self.has_admin_message_ = 0
-    self.admin_message_ = ""
+    if self.has_admin_message_:
+      self.has_admin_message_ = 0
+      self.admin_message_ = ""
 
   def has_admin_message(self): return self.has_admin_message_
 
@@ -275,8 +284,9 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     self.error_message_ = x
 
   def clear_error_message(self):
-    self.has_error_message_ = 0
-    self.error_message_ = ""
+    if self.has_error_message_:
+      self.has_error_message_ = 0
+      self.error_message_ = ""
 
   def has_error_message(self): return self.has_error_message_
 
@@ -401,6 +411,10 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
     if self.has_error_message_: res+=prefix+("error_message: %s\n" % self.DebugFormatString(self.error_message_))
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kpackage = 1
   kcapability = 2
   kstatus = 3
@@ -409,34 +423,27 @@ class CapabilityConfig(ProtocolBuffer.ProtocolMessage):
   kadmin_message = 5
   kerror_message = 6
 
-  _TEXT = (
-   "ErrorCode",
-   "package",
-   "capability",
-   "status",
-   "internal_message",
-   "admin_message",
-   "error_message",
-   "scheduled_time",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "package",
+    2: "capability",
+    3: "status",
+    4: "internal_message",
+    5: "admin_message",
+    6: "error_message",
+    7: "scheduled_time",
+  }, 7)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STRING,
+    2: ProtocolBuffer.Encoder.STRING,
+    3: ProtocolBuffer.Encoder.NUMERIC,
+    4: ProtocolBuffer.Encoder.STRING,
+    5: ProtocolBuffer.Encoder.STRING,
+    6: ProtocolBuffer.Encoder.STRING,
+    7: ProtocolBuffer.Encoder.STRING,
+  }, 7, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""

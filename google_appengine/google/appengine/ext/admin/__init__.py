@@ -41,11 +41,21 @@ import urllib
 import urlparse
 import wsgiref.handlers
 
+try:
+  from google.appengine.cron import groctimespecification
+  from google.appengine.api import croninfo
+except ImportError:
+  HAVE_CRON = False
+else:
+  HAVE_CRON = True
+
+from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore
 from google.appengine.api import datastore_admin
 from google.appengine.api import datastore_types
 from google.appengine.api import datastore_errors
 from google.appengine.api import memcache
+from google.appengine.api.labs import taskqueue
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -108,7 +118,13 @@ class BaseRequestHandler(webapp.RequestHandler):
       'interactive_path': base_path + InteractivePageHandler.PATH,
       'interactive_execute_path': base_path + InteractiveExecuteHandler.PATH,
       'memcache_path': base_path + MemcachePageHandler.PATH,
+      'queues_path': base_path + QueuesPageHandler.PATH,
+      'xmpp_path': base_path + XMPPPageHandler.PATH,
+      'inboundmail_path': base_path + InboundMailPageHandler.PATH,
     }
+    if HAVE_CRON:
+      values['cron_path'] = base_path + CronPageHandler.PATH
+
     values.update(template_values)
     directory = os.path.dirname(__file__)
     path = os.path.join(directory, os.path.join('templates', template_name))
@@ -199,6 +215,141 @@ class InteractiveExecuteHandler(BaseRequestHandler):
 
     results = results_io.getvalue()
     self.generate('interactive-output.html', {'output': results})
+
+
+class CronPageHandler(BaseRequestHandler):
+  """Shows information about configured cron jobs in this application."""
+  PATH = '/cron'
+
+  def get(self, now=None):
+    """Shows template displaying the configured cron jobs."""
+    if not now:
+      now = datetime.datetime.now()
+    values = {'request': self.request}
+    cron_info = _ParseCronYaml()
+    values['cronjobs'] = []
+    values['now'] = str(now)
+    if cron_info and cron_info.cron:
+      for entry in cron_info.cron:
+        job = {}
+        values['cronjobs'].append(job)
+        if entry.description:
+          job['description'] = entry.description
+        else:
+          job['description'] = '(no description)'
+        if entry.timezone:
+          job['timezone'] = entry.timezone
+        job['url'] = entry.url
+        job['schedule'] = entry.schedule
+        schedule = groctimespecification.GrocTimeSpecification(entry.schedule)
+        matches = schedule.GetMatches(now, 3)
+        job['times'] = []
+        for match in matches:
+          job['times'].append({'runtime': match.strftime("%Y-%m-%d %H:%M:%SZ"),
+                               'difference': str(match - now)})
+    self.generate('cron.html', values)
+
+
+class XMPPPageHandler(BaseRequestHandler):
+  """Tests XMPP requests."""
+  PATH = '/xmpp'
+
+  def get(self):
+    """Shows template displaying the XMPP."""
+    xmpp_configured = True
+    values = {
+      'xmpp_configured': xmpp_configured,
+      'request': self.request
+    }
+    self.generate('xmpp.html', values)
+
+
+class InboundMailPageHandler(BaseRequestHandler):
+  """Tests Mail requests."""
+  PATH = '/inboundmail'
+
+  def get(self):
+    """Shows template displaying the Inbound Mail form."""
+    inboundmail_configured = True
+    values = {
+      'inboundmail_configured': inboundmail_configured,
+      'request': self.request
+    }
+    self.generate('inboundmail.html', values)
+
+
+class QueuesPageHandler(BaseRequestHandler):
+  """Shows information about configured (and default) task queues."""
+  PATH = '/queues'
+
+  def __init__(self):
+    self.stub = apiproxy_stub_map.apiproxy.GetStub('taskqueue')
+
+  def get(self):
+    """Shows template displaying the configured task queues."""
+    values = {
+      'request': self.request,
+      'queues': self.stub.GetQueues(),
+    }
+    self.generate('queues.html', values)
+
+  def post(self):
+    """Handle modifying actions and/or redirect to GET page."""
+
+    if self.request.get('action:flushqueue'):
+      self.stub.FlushQueue(self.request.get('queue'))
+    self.redirect(self.request.path_url)
+
+
+class TasksPageHandler(BaseRequestHandler):
+  """Shows information about a queue's tasks."""
+
+  PATH = '/tasks'
+
+  PAGE_SIZE = 20
+
+  def __init__(self):
+    self.stub = apiproxy_stub_map.apiproxy.GetStub('taskqueue')
+
+  def get(self):
+    """Shows template displaying the queue's tasks."""
+    queue = self.request.get('queue')
+    start = int(self.request.get('start', 0))
+    all_tasks = self.stub.GetTasks(queue)
+
+    next_start = start + self.PAGE_SIZE
+    tasks = all_tasks[start:next_start]
+    current_page = int(start / self.PAGE_SIZE) + 1
+    pages = []
+    for number in xrange(int(math.ceil(len(all_tasks) /
+                                       float(self.PAGE_SIZE)))):
+      pages.append({
+        'number': number + 1,
+        'start': number * self.PAGE_SIZE
+      })
+    if not all_tasks[next_start:]:
+      next_start = -1
+    prev_start = start - self.PAGE_SIZE
+    if prev_start < 0:
+      prev_start = -1
+
+    values = {
+      'request': self.request,
+      'queue_name': queue,
+      'tasks': tasks,
+      'start_base_url': self.filter_url(['queue']),
+      'prev_start': prev_start,
+      'next_start': next_start,
+      'pages': pages,
+      'current_page': current_page,
+    }
+    self.generate('tasks.html', values)
+
+  def post(self):
+    if self.request.get('action:deletetask'):
+      self.stub.DeleteTask(self.request.get('queue'), self.request.get('task'))
+    self.redirect(self.request.path_url + '?queue=' + self.request.get('queue'))
+    return
 
 
 class MemcachePageHandler(BaseRequestHandler):
@@ -1057,6 +1208,9 @@ class NoneType(DataType):
   def parse(self, value):
     return None
 
+  def python_type(self):
+    return None
+
   def format(self, value):
     return 'None'
 
@@ -1089,8 +1243,29 @@ for data_type in _DATA_TYPES.values():
   _NAMED_DATA_TYPES[data_type.name()] = data_type
 
 
+def _ParseCronYaml():
+  """Loads the cron.yaml file and parses it.
+
+  The CWD of the dev_appserver is the root of the application here.
+
+  Returns a dict representing the contents of cron.yaml.
+  """
+  cronyaml_files = 'cron.yaml', 'cron.yml'
+  for cronyaml in cronyaml_files:
+    try:
+      fh = open(cronyaml, "r")
+    except IOError:
+      continue
+    try:
+      cron_info = croninfo.LoadSingleCron(fh)
+      return cron_info
+    finally:
+      fh.close()
+  return None
+
+
 def main():
-  application = webapp.WSGIApplication([
+  handlers = [
     ('.*' + DatastoreQueryHandler.PATH, DatastoreQueryHandler),
     ('.*' + DatastoreEditHandler.PATH, DatastoreEditHandler),
     ('.*' + DatastoreBatchEditHandler.PATH, DatastoreBatchEditHandler),
@@ -1098,8 +1273,15 @@ def main():
     ('.*' + InteractiveExecuteHandler.PATH, InteractiveExecuteHandler),
     ('.*' + MemcachePageHandler.PATH, MemcachePageHandler),
     ('.*' + ImageHandler.PATH, ImageHandler),
+    ('.*' + QueuesPageHandler.PATH, QueuesPageHandler),
+    ('.*' + TasksPageHandler.PATH, TasksPageHandler),
+    ('.*' + XMPPPageHandler.PATH, XMPPPageHandler),
+    ('.*' + InboundMailPageHandler.PATH, InboundMailPageHandler),
     ('.*', DefaultPageHandler),
-  ], debug=_DEBUG)
+  ]
+  if HAVE_CRON:
+    handlers.insert(0, ('.*' + CronPageHandler.PATH, CronPageHandler))
+  application = webapp.WSGIApplication(handlers, debug=_DEBUG)
   wsgiref.handlers.CGIHandler().run(application)
 
 

@@ -20,9 +20,9 @@
 Classes defined here:
   User: object representing a user.
   Error: base exception type
-  BadRequestError: UserService exception
   UserNotFoundError: UserService exception
-  BackendError: UserService exception
+  RedirectTooLongError: UserService exception
+  NotAllowedError: UserService exception
 """
 
 
@@ -33,7 +33,6 @@ Classes defined here:
 import os
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import user_service_pb
-from google.appengine.api import api_base_pb
 from google.appengine.runtime import apiproxy_errors
 
 
@@ -51,10 +50,15 @@ class RedirectTooLongError(Error):
   """
 
 
+class NotAllowedError(Error):
+  """Raised by UserService calls if the requested redirect URL is not allowed.
+  """
+
+
 class User(object):
   """A user.
 
-  We provide here the email address, nickname, and auth domain for a user.
+  We provide the email address, nickname, auth domain, and id for a user.
 
   A nickname is a human-readable string which uniquely identifies a Google
   user, akin to a username. It will be an email address for some users, but
@@ -62,12 +66,18 @@ class User(object):
   """
 
 
-  def __init__(self, email=None, _auth_domain=None):
+  __user_id = None
+
+  def __init__(self, email=None, _auth_domain=None, _user_id=None):
     """Constructor.
 
     Args:
-      # email is optional. it defaults to the current user.
-      email: string
+      email: An optional string of the user's email address. It defaults to
+          the current user's email address.
+
+    Raises:
+      UserNotFoundError: Raised if the user is not logged in and the email
+          argument is empty.
     """
     if _auth_domain is None:
       _auth_domain = os.environ.get('AUTH_DOMAIN')
@@ -79,12 +89,15 @@ class User(object):
     if email is None:
       assert 'USER_EMAIL' in os.environ
       email = os.environ['USER_EMAIL']
+      if _user_id is None and 'USER_ID' in os.environ:
+        _user_id = os.environ['USER_ID']
 
     if not email:
       raise UserNotFoundError
 
     self.__email = email
     self.__auth_domain = _auth_domain
+    self.__user_id = _user_id or None
 
   def nickname(self):
     """Return this user's nickname.
@@ -104,6 +117,13 @@ class User(object):
     """Return this user's email address."""
     return self.__email
 
+  def user_id(self):
+    """Return either a permanent unique identifying string or None.
+
+    If the email address was set explicity, this will return None.
+    """
+    return self.__user_id
+
   def auth_domain(self):
     """Return this user's auth domain."""
     return self.__auth_domain
@@ -115,7 +135,11 @@ class User(object):
     return str(self.nickname())
 
   def __repr__(self):
-    return "users.User(email='%s')" % self.email()
+    if self.__user_id:
+      return "users.User(email='%s',_user_id='%s')" % (self.email(),
+                                                       self.user_id())
+    else:
+      return "users.User(email='%s')" % self.email()
 
   def __hash__(self):
     return hash((self.__email, self.__auth_domain))
@@ -127,7 +151,7 @@ class User(object):
                (other.__email, other.__auth_domain))
 
 
-def create_login_url(dest_url):
+def create_login_url(dest_url, _auth_domain=None):
   """Computes the login URL for this request and specified destination URL.
 
   Args:
@@ -138,23 +162,29 @@ def create_login_url(dest_url):
   Returns:
     string
   """
-  req = user_service_pb.StringProto()
-  resp = user_service_pb.StringProto()
-  req.set_value(dest_url)
+  req = user_service_pb.CreateLoginURLRequest()
+  resp = user_service_pb.CreateLoginURLResponse()
+  req.set_destination_url(dest_url)
+  if _auth_domain:
+    req.set_auth_domain(_auth_domain)
+
   try:
     apiproxy_stub_map.MakeSyncCall('user', 'CreateLoginURL', req, resp)
   except apiproxy_errors.ApplicationError, e:
     if (e.application_error ==
         user_service_pb.UserServiceError.REDIRECT_URL_TOO_LONG):
       raise RedirectTooLongError
+    elif (e.application_error ==
+          user_service_pb.UserServiceError.NOT_ALLOWED):
+      raise NotAllowedError
     else:
       raise e
-  return resp.value()
+  return resp.login_url()
 
 CreateLoginURL = create_login_url
 
 
-def create_logout_url(dest_url):
+def create_logout_url(dest_url, _auth_domain=None):
   """Computes the logout URL for this request and specified destination URL.
 
   Args:
@@ -165,9 +195,12 @@ def create_logout_url(dest_url):
   Returns:
     string
   """
-  req = user_service_pb.StringProto()
-  resp = user_service_pb.StringProto()
-  req.set_value(dest_url)
+  req = user_service_pb.CreateLogoutURLRequest()
+  resp = user_service_pb.CreateLogoutURLResponse()
+  req.set_destination_url(dest_url)
+  if _auth_domain:
+    req.set_auth_domain(_auth_domain)
+
   try:
     apiproxy_stub_map.MakeSyncCall('user', 'CreateLogoutURL', req, resp)
   except apiproxy_errors.ApplicationError, e:
@@ -176,7 +209,7 @@ def create_logout_url(dest_url):
       raise RedirectTooLongError
     else:
       raise e
-  return resp.value()
+  return resp.logout_url()
 
 CreateLogoutURL = create_logout_url
 
@@ -198,6 +231,6 @@ def is_current_user_admin():
   the User class, because admin status is not persisted in the datastore. It
   only exists for the user making this request right now.
   """
-  return (os.environ.get('USER_IS_ADMIN', '0')) == "1"
+  return (os.environ.get('USER_IS_ADMIN', '0')) == '1'
 
 IsCurrentUserAdmin = is_current_user_admin

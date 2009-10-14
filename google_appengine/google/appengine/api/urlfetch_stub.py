@@ -19,9 +19,11 @@
 
 
 
+import gzip
 import httplib
 import logging
 import socket
+import StringIO
 import urllib
 import urlparse
 
@@ -51,11 +53,8 @@ _API_CALL_DEADLINE = 5.0
 
 
 _UNTRUSTED_REQUEST_HEADERS = frozenset([
-  'accept-encoding',
   'content-length',
   'host',
-  'referer',
-  'user-agent',
   'vary',
   'via',
   'x-forwarded-for',
@@ -104,17 +103,26 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
       raise apiproxy_errors.ApplicationError(
         urlfetch_service_pb.URLFetchServiceError.INVALID_URL)
 
+    if not host:
+      logging.error('Missing host.')
+      raise apiproxy_errors.ApplicationError(
+          urlfetch_service_pb.URLFetchServiceError.FETCH_ERROR)
+
     sanitized_headers = self._SanitizeHttpHeaders(_UNTRUSTED_REQUEST_HEADERS,
                                                   request.header_list())
     request.clear_header()
     request.header_list().extend(sanitized_headers)
+    deadline = _API_CALL_DEADLINE
+    if request.has_deadline():
+      deadline = request.deadline()
 
     self._RetrieveURL(request.url(), payload, method,
                       request.header_list(), response,
-                      follow_redirects=request.followredirects())
+                      follow_redirects=request.followredirects(),
+                      deadline=deadline)
 
   def _RetrieveURL(self, url, payload, method, headers, response,
-                   follow_redirects=True):
+                   follow_redirects=True, deadline=_API_CALL_DEADLINE):
     """Retrieves a URL.
 
     Args:
@@ -125,6 +133,7 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
       response: Response object
       follow_redirects: optional setting (defaulting to True) for whether or not
         we should transparently follow redirects (up to MAX_REDIRECTS)
+      deadline: Number of seconds to wait for the urlfetch to finish.
 
     Raises:
       Raises an apiproxy_errors.ApplicationError exception with FETCH_ERROR
@@ -146,13 +155,20 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
           'urlfetch received %s ; port %s is not allowed in production!' %
           (url, port))
 
-      if host == '' and protocol == '':
+      if protocol and not host:
+        logging.error('Missing host on redirect; target url is %s' % url)
+        raise apiproxy_errors.ApplicationError(
+          urlfetch_service_pb.URLFetchServiceError.FETCH_ERROR)
+
+      if not host and not protocol:
         host = last_host
         protocol = last_protocol
 
       adjusted_headers = {
-        'Host': host,
-        'Accept': '*/*',
+          'User-Agent':
+          'AppEngine-Google; (+http://code.google.com/appengine)',
+          'Host': host,
+          'Accept-Encoding': 'gzip',
       }
       if payload is not None:
         adjusted_headers['Content-Length'] = len(payload)
@@ -160,7 +176,12 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
         adjusted_headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
       for header in headers:
-        adjusted_headers[header.key().title()] = header.value()
+        if header.key().title().lower() == 'user-agent':
+          adjusted_headers['User-Agent'] = (
+              '%s %s' %
+              (header.value(), adjusted_headers['User-Agent']))
+        else:
+          adjusted_headers[header.key().title()] = header.value()
 
       logging.debug('Making HTTP request: host = %s, '
                     'url = %s, payload = %s, headers = %s',
@@ -186,10 +207,13 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
 
         orig_timeout = socket.getdefaulttimeout()
         try:
-          socket.setdefaulttimeout(_API_CALL_DEADLINE)
+          socket.setdefaulttimeout(deadline)
           connection.request(method, full_path, payload, adjusted_headers)
           http_response = connection.getresponse()
-          http_response_data = http_response.read()
+          if method == 'HEAD':
+            http_response_data = ''
+          else:
+            http_response_data = http_response.read()
         finally:
           socket.setdefaulttimeout(orig_timeout)
           connection.close()
@@ -206,8 +230,17 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
               urlfetch_service_pb.URLFetchServiceError.FETCH_ERROR, error_msg)
       else:
         response.set_statuscode(http_response.status)
+        if http_response.getheader('content-encoding') == 'gzip':
+          gzip_stream = StringIO.StringIO(http_response_data)
+          gzip_file = gzip.GzipFile(fileobj=gzip_stream)
+          http_response_data = gzip_file.read()
         response.set_content(http_response_data[:MAX_RESPONSE_SIZE])
         for header_key, header_value in http_response.getheaders():
+          if (header_key.lower() == 'content-encoding' and
+              header_value == 'gzip'):
+            continue
+          if header_key.lower() == 'content-length':
+            header_value = str(len(response.content()))
           header_proto = response.add_header()
           header_proto.set_key(header_key)
           header_proto.set_value(header_value)
@@ -229,4 +262,9 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
       untrusted_headers: set of untrusted headers names
       headers: list of string pairs, first is header name and the second is header's value
     """
+    prohibited_headers = [h.key() for h in headers
+                          if h.key().lower() in untrusted_headers]
+    if prohibited_headers:
+      logging.warn('Stripped prohibited headers from URLFetch request: %s',
+                   prohibited_headers)
     return (h for h in headers if h.key().lower() not in untrusted_headers)

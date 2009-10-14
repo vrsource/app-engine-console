@@ -22,7 +22,6 @@ import dummy_thread as thread
 __pychecker__ = """maxreturns=0 maxbranches=0 no-callinit
                    unusednames=printElemNumber,debug_strs no-special"""
 
-from google.appengine.api.api_base_pb import VoidProto
 class MemcacheServiceError(ProtocolBuffer.ProtocolMessage):
 
   OK           =    0
@@ -75,17 +74,23 @@ class MemcacheServiceError(ProtocolBuffer.ProtocolMessage):
     return res
 
 
-  _TEXT = (
-   "ErrorCode",
-  )
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-  )
+
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+  }, 0)
+
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+  }, 0, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
 class MemcacheGetRequest(ProtocolBuffer.ProtocolMessage):
+  has_name_space_ = 0
+  name_space_ = ""
 
   def __init__(self, contents=None):
     self.key_ = []
@@ -106,16 +111,32 @@ class MemcacheGetRequest(ProtocolBuffer.ProtocolMessage):
   def clear_key(self):
     self.key_ = []
 
+  def name_space(self): return self.name_space_
+
+  def set_name_space(self, x):
+    self.has_name_space_ = 1
+    self.name_space_ = x
+
+  def clear_name_space(self):
+    if self.has_name_space_:
+      self.has_name_space_ = 0
+      self.name_space_ = ""
+
+  def has_name_space(self): return self.has_name_space_
+
 
   def MergeFrom(self, x):
     assert x is not self
     for i in xrange(x.key_size()): self.add_key(x.key(i))
+    if (x.has_name_space()): self.set_name_space(x.name_space())
 
   def Equals(self, x):
     if x is self: return 1
     if len(self.key_) != len(x.key_): return 0
     for e1, e2 in zip(self.key_, x.key_):
       if e1 != e2: return 0
+    if self.has_name_space_ != x.has_name_space_: return 0
+    if self.has_name_space_ and self.name_space_ != x.name_space_: return 0
     return 1
 
   def IsInitialized(self, debug_strs=None):
@@ -126,21 +147,29 @@ class MemcacheGetRequest(ProtocolBuffer.ProtocolMessage):
     n = 0
     n += 1 * len(self.key_)
     for i in xrange(len(self.key_)): n += self.lengthString(len(self.key_[i]))
+    if (self.has_name_space_): n += 1 + self.lengthString(len(self.name_space_))
     return n + 0
 
   def Clear(self):
     self.clear_key()
+    self.clear_name_space()
 
   def OutputUnchecked(self, out):
     for i in xrange(len(self.key_)):
       out.putVarInt32(10)
       out.putPrefixedString(self.key_[i])
+    if (self.has_name_space_):
+      out.putVarInt32(18)
+      out.putPrefixedString(self.name_space_)
 
   def TryMerge(self, d):
     while d.avail() > 0:
       tt = d.getVarInt32()
       if tt == 10:
         self.add_key(d.getPrefixedString())
+        continue
+      if tt == 18:
+        self.set_name_space(d.getPrefixedString())
         continue
       if (tt == 0): raise ProtocolBuffer.ProtocolBufferDecodeError
       d.skipData(tt)
@@ -154,20 +183,27 @@ class MemcacheGetRequest(ProtocolBuffer.ProtocolMessage):
       if printElemNumber: elm="(%d)" % cnt
       res+=prefix+("key%s: %s\n" % (elm, self.DebugFormatString(e)))
       cnt+=1
+    if self.has_name_space_: res+=prefix+("name_space: %s\n" % self.DebugFormatString(self.name_space_))
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kkey = 1
+  kname_space = 2
 
-  _TEXT = (
-   "ErrorCode",
-   "key",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "key",
+    2: "name_space",
+  }, 2)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STRING,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STRING,
+    2: ProtocolBuffer.Encoder.STRING,
+  }, 2, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -189,8 +225,9 @@ class MemcacheGetResponse_Item(ProtocolBuffer.ProtocolMessage):
     self.key_ = x
 
   def clear_key(self):
-    self.has_key_ = 0
-    self.key_ = ""
+    if self.has_key_:
+      self.has_key_ = 0
+      self.key_ = ""
 
   def has_key(self): return self.has_key_
 
@@ -201,8 +238,9 @@ class MemcacheGetResponse_Item(ProtocolBuffer.ProtocolMessage):
     self.value_ = x
 
   def clear_value(self):
-    self.has_value_ = 0
-    self.value_ = ""
+    if self.has_value_:
+      self.has_value_ = 0
+      self.value_ = ""
 
   def has_value(self): return self.has_value_
 
@@ -213,8 +251,9 @@ class MemcacheGetResponse_Item(ProtocolBuffer.ProtocolMessage):
     self.flags_ = x
 
   def clear_flags(self):
-    self.has_flags_ = 0
-    self.flags_ = 0
+    if self.has_flags_:
+      self.has_flags_ = 0
+      self.flags_ = 0
 
   def has_flags(self): return self.has_flags_
 
@@ -369,30 +408,30 @@ class MemcacheGetResponse(ProtocolBuffer.ProtocolMessage):
       cnt+=1
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kItemGroup = 1
   kItemkey = 2
   kItemvalue = 3
   kItemflags = 4
 
-  _TEXT = (
-   "ErrorCode",
-   "Item",
-   "key",
-   "value",
-   "flags",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "Item",
+    2: "key",
+    3: "value",
+    4: "flags",
+  }, 4)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STARTGROUP,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.FLOAT,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STARTGROUP,
+    2: ProtocolBuffer.Encoder.STRING,
+    3: ProtocolBuffer.Encoder.STRING,
+    4: ProtocolBuffer.Encoder.FLOAT,
+  }, 4, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -418,8 +457,9 @@ class MemcacheSetRequest_Item(ProtocolBuffer.ProtocolMessage):
     self.key_ = x
 
   def clear_key(self):
-    self.has_key_ = 0
-    self.key_ = ""
+    if self.has_key_:
+      self.has_key_ = 0
+      self.key_ = ""
 
   def has_key(self): return self.has_key_
 
@@ -430,8 +470,9 @@ class MemcacheSetRequest_Item(ProtocolBuffer.ProtocolMessage):
     self.value_ = x
 
   def clear_value(self):
-    self.has_value_ = 0
-    self.value_ = ""
+    if self.has_value_:
+      self.has_value_ = 0
+      self.value_ = ""
 
   def has_value(self): return self.has_value_
 
@@ -442,8 +483,9 @@ class MemcacheSetRequest_Item(ProtocolBuffer.ProtocolMessage):
     self.flags_ = x
 
   def clear_flags(self):
-    self.has_flags_ = 0
-    self.flags_ = 0
+    if self.has_flags_:
+      self.has_flags_ = 0
+      self.flags_ = 0
 
   def has_flags(self): return self.has_flags_
 
@@ -454,8 +496,9 @@ class MemcacheSetRequest_Item(ProtocolBuffer.ProtocolMessage):
     self.set_policy_ = x
 
   def clear_set_policy(self):
-    self.has_set_policy_ = 0
-    self.set_policy_ = 1
+    if self.has_set_policy_:
+      self.has_set_policy_ = 0
+      self.set_policy_ = 1
 
   def has_set_policy(self): return self.has_set_policy_
 
@@ -466,8 +509,9 @@ class MemcacheSetRequest_Item(ProtocolBuffer.ProtocolMessage):
     self.expiration_time_ = x
 
   def clear_expiration_time(self):
-    self.has_expiration_time_ = 0
-    self.expiration_time_ = 0
+    if self.has_expiration_time_:
+      self.has_expiration_time_ = 0
+      self.expiration_time_ = 0
 
   def has_expiration_time(self): return self.has_expiration_time_
 
@@ -584,6 +628,8 @@ class MemcacheSetRequest(ProtocolBuffer.ProtocolMessage):
   def SetPolicy_Name(cls, x): return cls._SetPolicy_NAMES.get(x, "")
   SetPolicy_Name = classmethod(SetPolicy_Name)
 
+  has_name_space_ = 0
+  name_space_ = ""
 
   def __init__(self, contents=None):
     self.item_ = []
@@ -605,16 +651,32 @@ class MemcacheSetRequest(ProtocolBuffer.ProtocolMessage):
 
   def clear_item(self):
     self.item_ = []
+  def name_space(self): return self.name_space_
+
+  def set_name_space(self, x):
+    self.has_name_space_ = 1
+    self.name_space_ = x
+
+  def clear_name_space(self):
+    if self.has_name_space_:
+      self.has_name_space_ = 0
+      self.name_space_ = ""
+
+  def has_name_space(self): return self.has_name_space_
+
 
   def MergeFrom(self, x):
     assert x is not self
     for i in xrange(x.item_size()): self.add_item().CopyFrom(x.item(i))
+    if (x.has_name_space()): self.set_name_space(x.name_space())
 
   def Equals(self, x):
     if x is self: return 1
     if len(self.item_) != len(x.item_): return 0
     for e1, e2 in zip(self.item_, x.item_):
       if e1 != e2: return 0
+    if self.has_name_space_ != x.has_name_space_: return 0
+    if self.has_name_space_ and self.name_space_ != x.name_space_: return 0
     return 1
 
   def IsInitialized(self, debug_strs=None):
@@ -627,22 +689,30 @@ class MemcacheSetRequest(ProtocolBuffer.ProtocolMessage):
     n = 0
     n += 2 * len(self.item_)
     for i in xrange(len(self.item_)): n += self.item_[i].ByteSize()
+    if (self.has_name_space_): n += 1 + self.lengthString(len(self.name_space_))
     return n + 0
 
   def Clear(self):
     self.clear_item()
+    self.clear_name_space()
 
   def OutputUnchecked(self, out):
     for i in xrange(len(self.item_)):
       out.putVarInt32(11)
       self.item_[i].OutputUnchecked(out)
       out.putVarInt32(12)
+    if (self.has_name_space_):
+      out.putVarInt32(58)
+      out.putPrefixedString(self.name_space_)
 
   def TryMerge(self, d):
     while d.avail() > 0:
       tt = d.getVarInt32()
       if tt == 11:
         self.add_item().TryMerge(d)
+        continue
+      if tt == 58:
+        self.set_name_space(d.getPrefixedString())
         continue
       if (tt == 0): raise ProtocolBuffer.ProtocolBufferDecodeError
       d.skipData(tt)
@@ -658,7 +728,12 @@ class MemcacheSetRequest(ProtocolBuffer.ProtocolMessage):
       res+=e.__str__(prefix + "  ", printElemNumber)
       res+=prefix+"}\n"
       cnt+=1
+    if self.has_name_space_: res+=prefix+("name_space: %s\n" % self.DebugFormatString(self.name_space_))
     return res
+
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
 
   kItemGroup = 1
   kItemkey = 2
@@ -666,32 +741,29 @@ class MemcacheSetRequest(ProtocolBuffer.ProtocolMessage):
   kItemflags = 4
   kItemset_policy = 5
   kItemexpiration_time = 6
+  kname_space = 7
 
-  _TEXT = (
-   "ErrorCode",
-   "Item",
-   "key",
-   "value",
-   "flags",
-   "set_policy",
-   "expiration_time",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "Item",
+    2: "key",
+    3: "value",
+    4: "flags",
+    5: "set_policy",
+    6: "expiration_time",
+    7: "name_space",
+  }, 7)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STARTGROUP,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.FLOAT,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.FLOAT,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STARTGROUP,
+    2: ProtocolBuffer.Encoder.STRING,
+    3: ProtocolBuffer.Encoder.STRING,
+    4: ProtocolBuffer.Encoder.FLOAT,
+    5: ProtocolBuffer.Encoder.NUMERIC,
+    6: ProtocolBuffer.Encoder.FLOAT,
+    7: ProtocolBuffer.Encoder.STRING,
+  }, 7, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -780,18 +852,21 @@ class MemcacheSetResponse(ProtocolBuffer.ProtocolMessage):
       cnt+=1
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kset_status = 1
 
-  _TEXT = (
-   "ErrorCode",
-   "set_status",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "set_status",
+  }, 1)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.NUMERIC,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.NUMERIC,
+  }, 1, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -811,8 +886,9 @@ class MemcacheDeleteRequest_Item(ProtocolBuffer.ProtocolMessage):
     self.key_ = x
 
   def clear_key(self):
-    self.has_key_ = 0
-    self.key_ = ""
+    if self.has_key_:
+      self.has_key_ = 0
+      self.key_ = ""
 
   def has_key(self): return self.has_key_
 
@@ -823,8 +899,9 @@ class MemcacheDeleteRequest_Item(ProtocolBuffer.ProtocolMessage):
     self.delete_time_ = x
 
   def clear_delete_time(self):
-    self.has_delete_time_ = 0
-    self.delete_time_ = 0
+    if self.has_delete_time_:
+      self.has_delete_time_ = 0
+      self.delete_time_ = 0
 
   def has_delete_time(self): return self.has_delete_time_
 
@@ -888,6 +965,8 @@ class MemcacheDeleteRequest_Item(ProtocolBuffer.ProtocolMessage):
     return res
 
 class MemcacheDeleteRequest(ProtocolBuffer.ProtocolMessage):
+  has_name_space_ = 0
+  name_space_ = ""
 
   def __init__(self, contents=None):
     self.item_ = []
@@ -909,16 +988,32 @@ class MemcacheDeleteRequest(ProtocolBuffer.ProtocolMessage):
 
   def clear_item(self):
     self.item_ = []
+  def name_space(self): return self.name_space_
+
+  def set_name_space(self, x):
+    self.has_name_space_ = 1
+    self.name_space_ = x
+
+  def clear_name_space(self):
+    if self.has_name_space_:
+      self.has_name_space_ = 0
+      self.name_space_ = ""
+
+  def has_name_space(self): return self.has_name_space_
+
 
   def MergeFrom(self, x):
     assert x is not self
     for i in xrange(x.item_size()): self.add_item().CopyFrom(x.item(i))
+    if (x.has_name_space()): self.set_name_space(x.name_space())
 
   def Equals(self, x):
     if x is self: return 1
     if len(self.item_) != len(x.item_): return 0
     for e1, e2 in zip(self.item_, x.item_):
       if e1 != e2: return 0
+    if self.has_name_space_ != x.has_name_space_: return 0
+    if self.has_name_space_ and self.name_space_ != x.name_space_: return 0
     return 1
 
   def IsInitialized(self, debug_strs=None):
@@ -931,22 +1026,30 @@ class MemcacheDeleteRequest(ProtocolBuffer.ProtocolMessage):
     n = 0
     n += 2 * len(self.item_)
     for i in xrange(len(self.item_)): n += self.item_[i].ByteSize()
+    if (self.has_name_space_): n += 1 + self.lengthString(len(self.name_space_))
     return n + 0
 
   def Clear(self):
     self.clear_item()
+    self.clear_name_space()
 
   def OutputUnchecked(self, out):
     for i in xrange(len(self.item_)):
       out.putVarInt32(11)
       self.item_[i].OutputUnchecked(out)
       out.putVarInt32(12)
+    if (self.has_name_space_):
+      out.putVarInt32(34)
+      out.putPrefixedString(self.name_space_)
 
   def TryMerge(self, d):
     while d.avail() > 0:
       tt = d.getVarInt32()
       if tt == 11:
         self.add_item().TryMerge(d)
+        continue
+      if tt == 34:
+        self.set_name_space(d.getPrefixedString())
         continue
       if (tt == 0): raise ProtocolBuffer.ProtocolBufferDecodeError
       d.skipData(tt)
@@ -962,28 +1065,33 @@ class MemcacheDeleteRequest(ProtocolBuffer.ProtocolMessage):
       res+=e.__str__(prefix + "  ", printElemNumber)
       res+=prefix+"}\n"
       cnt+=1
+    if self.has_name_space_: res+=prefix+("name_space: %s\n" % self.DebugFormatString(self.name_space_))
     return res
+
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
 
   kItemGroup = 1
   kItemkey = 2
   kItemdelete_time = 3
+  kname_space = 4
 
-  _TEXT = (
-   "ErrorCode",
-   "Item",
-   "key",
-   "delete_time",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "Item",
+    2: "key",
+    3: "delete_time",
+    4: "name_space",
+  }, 4)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STARTGROUP,
-
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.FLOAT,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STARTGROUP,
+    2: ProtocolBuffer.Encoder.STRING,
+    3: ProtocolBuffer.Encoder.FLOAT,
+    4: ProtocolBuffer.Encoder.STRING,
+  }, 4, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1070,18 +1178,21 @@ class MemcacheDeleteResponse(ProtocolBuffer.ProtocolMessage):
       cnt+=1
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kdelete_status = 1
 
-  _TEXT = (
-   "ErrorCode",
-   "delete_status",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "delete_status",
+  }, 1)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.NUMERIC,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.NUMERIC,
+  }, 1, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1100,10 +1211,14 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
 
   has_key_ = 0
   key_ = ""
+  has_name_space_ = 0
+  name_space_ = ""
   has_delta_ = 0
   delta_ = 1
   has_direction_ = 0
   direction_ = 1
+  has_initial_value_ = 0
+  initial_value_ = 0
 
   def __init__(self, contents=None):
     if contents is not None: self.MergeFromString(contents)
@@ -1115,10 +1230,24 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
     self.key_ = x
 
   def clear_key(self):
-    self.has_key_ = 0
-    self.key_ = ""
+    if self.has_key_:
+      self.has_key_ = 0
+      self.key_ = ""
 
   def has_key(self): return self.has_key_
+
+  def name_space(self): return self.name_space_
+
+  def set_name_space(self, x):
+    self.has_name_space_ = 1
+    self.name_space_ = x
+
+  def clear_name_space(self):
+    if self.has_name_space_:
+      self.has_name_space_ = 0
+      self.name_space_ = ""
+
+  def has_name_space(self): return self.has_name_space_
 
   def delta(self): return self.delta_
 
@@ -1127,8 +1256,9 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
     self.delta_ = x
 
   def clear_delta(self):
-    self.has_delta_ = 0
-    self.delta_ = 1
+    if self.has_delta_:
+      self.has_delta_ = 0
+      self.delta_ = 1
 
   def has_delta(self): return self.has_delta_
 
@@ -1139,26 +1269,46 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
     self.direction_ = x
 
   def clear_direction(self):
-    self.has_direction_ = 0
-    self.direction_ = 1
+    if self.has_direction_:
+      self.has_direction_ = 0
+      self.direction_ = 1
 
   def has_direction(self): return self.has_direction_
+
+  def initial_value(self): return self.initial_value_
+
+  def set_initial_value(self, x):
+    self.has_initial_value_ = 1
+    self.initial_value_ = x
+
+  def clear_initial_value(self):
+    if self.has_initial_value_:
+      self.has_initial_value_ = 0
+      self.initial_value_ = 0
+
+  def has_initial_value(self): return self.has_initial_value_
 
 
   def MergeFrom(self, x):
     assert x is not self
     if (x.has_key()): self.set_key(x.key())
+    if (x.has_name_space()): self.set_name_space(x.name_space())
     if (x.has_delta()): self.set_delta(x.delta())
     if (x.has_direction()): self.set_direction(x.direction())
+    if (x.has_initial_value()): self.set_initial_value(x.initial_value())
 
   def Equals(self, x):
     if x is self: return 1
     if self.has_key_ != x.has_key_: return 0
     if self.has_key_ and self.key_ != x.key_: return 0
+    if self.has_name_space_ != x.has_name_space_: return 0
+    if self.has_name_space_ and self.name_space_ != x.name_space_: return 0
     if self.has_delta_ != x.has_delta_: return 0
     if self.has_delta_ and self.delta_ != x.delta_: return 0
     if self.has_direction_ != x.has_direction_: return 0
     if self.has_direction_ and self.direction_ != x.direction_: return 0
+    if self.has_initial_value_ != x.has_initial_value_: return 0
+    if self.has_initial_value_ and self.initial_value_ != x.initial_value_: return 0
     return 1
 
   def IsInitialized(self, debug_strs=None):
@@ -1172,14 +1322,18 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
   def ByteSize(self):
     n = 0
     n += self.lengthString(len(self.key_))
+    if (self.has_name_space_): n += 1 + self.lengthString(len(self.name_space_))
     if (self.has_delta_): n += 1 + self.lengthVarInt64(self.delta_)
     if (self.has_direction_): n += 1 + self.lengthVarInt64(self.direction_)
+    if (self.has_initial_value_): n += 1 + self.lengthVarInt64(self.initial_value_)
     return n + 1
 
   def Clear(self):
     self.clear_key()
+    self.clear_name_space()
     self.clear_delta()
     self.clear_direction()
+    self.clear_initial_value()
 
   def OutputUnchecked(self, out):
     out.putVarInt32(10)
@@ -1190,6 +1344,12 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
     if (self.has_direction_):
       out.putVarInt32(24)
       out.putVarInt32(self.direction_)
+    if (self.has_name_space_):
+      out.putVarInt32(34)
+      out.putPrefixedString(self.name_space_)
+    if (self.has_initial_value_):
+      out.putVarInt32(40)
+      out.putVarUint64(self.initial_value_)
 
   def TryMerge(self, d):
     while d.avail() > 0:
@@ -1203,6 +1363,12 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
       if tt == 24:
         self.set_direction(d.getVarInt32())
         continue
+      if tt == 34:
+        self.set_name_space(d.getPrefixedString())
+        continue
+      if tt == 40:
+        self.set_initial_value(d.getVarUint64())
+        continue
       if (tt == 0): raise ProtocolBuffer.ProtocolBufferDecodeError
       d.skipData(tt)
 
@@ -1210,30 +1376,39 @@ class MemcacheIncrementRequest(ProtocolBuffer.ProtocolMessage):
   def __str__(self, prefix="", printElemNumber=0):
     res=""
     if self.has_key_: res+=prefix+("key: %s\n" % self.DebugFormatString(self.key_))
+    if self.has_name_space_: res+=prefix+("name_space: %s\n" % self.DebugFormatString(self.name_space_))
     if self.has_delta_: res+=prefix+("delta: %s\n" % self.DebugFormatInt64(self.delta_))
     if self.has_direction_: res+=prefix+("direction: %s\n" % self.DebugFormatInt32(self.direction_))
+    if self.has_initial_value_: res+=prefix+("initial_value: %s\n" % self.DebugFormatInt64(self.initial_value_))
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kkey = 1
+  kname_space = 4
   kdelta = 2
   kdirection = 3
+  kinitial_value = 5
 
-  _TEXT = (
-   "ErrorCode",
-   "key",
-   "delta",
-   "direction",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "key",
+    2: "delta",
+    3: "direction",
+    4: "name_space",
+    5: "initial_value",
+  }, 5)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STRING,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STRING,
+    2: ProtocolBuffer.Encoder.NUMERIC,
+    3: ProtocolBuffer.Encoder.NUMERIC,
+    4: ProtocolBuffer.Encoder.STRING,
+    5: ProtocolBuffer.Encoder.NUMERIC,
+  }, 5, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1251,8 +1426,9 @@ class MemcacheIncrementResponse(ProtocolBuffer.ProtocolMessage):
     self.new_value_ = x
 
   def clear_new_value(self):
-    self.has_new_value_ = 0
-    self.new_value_ = 0
+    if self.has_new_value_:
+      self.has_new_value_ = 0
+      self.new_value_ = 0
 
   def has_new_value(self): return self.has_new_value_
 
@@ -1299,18 +1475,21 @@ class MemcacheIncrementResponse(ProtocolBuffer.ProtocolMessage):
     if self.has_new_value_: res+=prefix+("new_value: %s\n" % self.DebugFormatInt64(self.new_value_))
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   knew_value = 1
 
-  _TEXT = (
-   "ErrorCode",
-   "new_value",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "new_value",
+  }, 1)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.NUMERIC,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.NUMERIC,
+  }, 1, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1354,13 +1533,17 @@ class MemcacheFlushRequest(ProtocolBuffer.ProtocolMessage):
     return res
 
 
-  _TEXT = (
-   "ErrorCode",
-  )
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-  )
+
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+  }, 0)
+
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+  }, 0, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1404,13 +1587,17 @@ class MemcacheFlushResponse(ProtocolBuffer.ProtocolMessage):
     return res
 
 
-  _TEXT = (
-   "ErrorCode",
-  )
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-  )
+
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+  }, 0)
+
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+  }, 0, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1454,13 +1641,17 @@ class MemcacheStatsRequest(ProtocolBuffer.ProtocolMessage):
     return res
 
 
-  _TEXT = (
-   "ErrorCode",
-  )
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-  )
+
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+  }, 0)
+
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+  }, 0, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1488,8 +1679,9 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
     self.hits_ = x
 
   def clear_hits(self):
-    self.has_hits_ = 0
-    self.hits_ = 0
+    if self.has_hits_:
+      self.has_hits_ = 0
+      self.hits_ = 0
 
   def has_hits(self): return self.has_hits_
 
@@ -1500,8 +1692,9 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
     self.misses_ = x
 
   def clear_misses(self):
-    self.has_misses_ = 0
-    self.misses_ = 0
+    if self.has_misses_:
+      self.has_misses_ = 0
+      self.misses_ = 0
 
   def has_misses(self): return self.has_misses_
 
@@ -1512,8 +1705,9 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
     self.byte_hits_ = x
 
   def clear_byte_hits(self):
-    self.has_byte_hits_ = 0
-    self.byte_hits_ = 0
+    if self.has_byte_hits_:
+      self.has_byte_hits_ = 0
+      self.byte_hits_ = 0
 
   def has_byte_hits(self): return self.has_byte_hits_
 
@@ -1524,8 +1718,9 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
     self.items_ = x
 
   def clear_items(self):
-    self.has_items_ = 0
-    self.items_ = 0
+    if self.has_items_:
+      self.has_items_ = 0
+      self.items_ = 0
 
   def has_items(self): return self.has_items_
 
@@ -1536,8 +1731,9 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
     self.bytes_ = x
 
   def clear_bytes(self):
-    self.has_bytes_ = 0
-    self.bytes_ = 0
+    if self.has_bytes_:
+      self.has_bytes_ = 0
+      self.bytes_ = 0
 
   def has_bytes(self): return self.has_bytes_
 
@@ -1548,8 +1744,9 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
     self.oldest_item_age_ = x
 
   def clear_oldest_item_age(self):
-    self.has_oldest_item_age_ = 0
-    self.oldest_item_age_ = 0
+    if self.has_oldest_item_age_:
+      self.has_oldest_item_age_ = 0
+      self.oldest_item_age_ = 0
 
   def has_oldest_item_age(self): return self.has_oldest_item_age_
 
@@ -1673,6 +1870,10 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
     if self.has_oldest_item_age_: res+=prefix+("oldest_item_age: %s\n" % self.DebugFormatFixed32(self.oldest_item_age_))
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   khits = 1
   kmisses = 2
   kbyte_hits = 3
@@ -1680,31 +1881,25 @@ class MergedNamespaceStats(ProtocolBuffer.ProtocolMessage):
   kbytes = 5
   koldest_item_age = 6
 
-  _TEXT = (
-   "ErrorCode",
-   "hits",
-   "misses",
-   "byte_hits",
-   "items",
-   "bytes",
-   "oldest_item_age",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "hits",
+    2: "misses",
+    3: "byte_hits",
+    4: "items",
+    5: "bytes",
+    6: "oldest_item_age",
+  }, 6)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.NUMERIC,
-
-   ProtocolBuffer.Encoder.FLOAT,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.NUMERIC,
+    2: ProtocolBuffer.Encoder.NUMERIC,
+    3: ProtocolBuffer.Encoder.NUMERIC,
+    4: ProtocolBuffer.Encoder.NUMERIC,
+    5: ProtocolBuffer.Encoder.NUMERIC,
+    6: ProtocolBuffer.Encoder.FLOAT,
+  }, 6, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""
@@ -1728,8 +1923,9 @@ class MemcacheStatsResponse(ProtocolBuffer.ProtocolMessage):
   def mutable_stats(self): self.has_stats_ = 1; return self.stats()
 
   def clear_stats(self):
-    self.has_stats_ = 0;
-    if self.stats_ is not None: self.stats_.Clear()
+    if self.has_stats_:
+      self.has_stats_ = 0;
+      if self.stats_ is not None: self.stats_.Clear()
 
   def has_stats(self): return self.has_stats_
 
@@ -1784,18 +1980,21 @@ class MemcacheStatsResponse(ProtocolBuffer.ProtocolMessage):
       res+=prefix+">\n"
     return res
 
+
+  def _BuildTagLookupTable(sparse, maxtag, default=None):
+    return tuple([sparse.get(i, default) for i in xrange(0, 1+maxtag)])
+
   kstats = 1
 
-  _TEXT = (
-   "ErrorCode",
-   "stats",
-  )
+  _TEXT = _BuildTagLookupTable({
+    0: "ErrorCode",
+    1: "stats",
+  }, 1)
 
-  _TYPES = (
-   ProtocolBuffer.Encoder.NUMERIC,
-   ProtocolBuffer.Encoder.STRING,
-
-  )
+  _TYPES = _BuildTagLookupTable({
+    0: ProtocolBuffer.Encoder.NUMERIC,
+    1: ProtocolBuffer.Encoder.STRING,
+  }, 1, ProtocolBuffer.Encoder.MAX_TYPE)
 
   _STYLE = """"""
   _STYLE_CONTENT_TYPE = """"""

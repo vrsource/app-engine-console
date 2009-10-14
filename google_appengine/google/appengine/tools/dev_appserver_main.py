@@ -54,6 +54,8 @@ Options:
   --debug_imports            Enables debug logging for module imports, showing
                              search paths used for finding modules and any
                              errors encountered during the import process.
+  --allow_skipped_files      Allow access to files matched by app.yaml's
+                             skipped_files (default False)
   --disable_static_caching   Never allow the browser to cache static files.
                              (Default enable if expiration set in app.yaml)
 """
@@ -65,14 +67,30 @@ from google.appengine.tools import os_compat
 import getopt
 import logging
 import os
+import re
+import signal
 import sys
 import traceback
 import tempfile
 
-from google.appengine.api import yaml_errors
-from google.appengine.tools import appcfg
-from google.appengine.tools import appengine_rpc
-from google.appengine.tools import dev_appserver
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)-8s %(asctime)s %(filename)s:%(lineno)s] %(message)s')
+
+
+def SetGlobals():
+  """Set various global variables involving the 'google' package.
+
+  This function should not be called until sys.path has been properly set.
+  """
+  global yaml_errors, appcfg, appengine_rpc, dev_appserver, os_compat
+  from google.appengine.api import yaml_errors
+  from google.appengine.dist import py_zipimport
+  from google.appengine.tools import appcfg
+  from google.appengine.tools import appengine_rpc
+  from google.appengine.tools import dev_appserver
+  from google.appengine.tools import os_compat
+
 
 
 DEFAULT_ADMIN_CONSOLE_SERVER = 'appengine.google.com'
@@ -91,16 +109,22 @@ ARG_LOGIN_URL = 'login_url'
 ARG_LOG_LEVEL = 'log_level'
 ARG_PORT = 'port'
 ARG_REQUIRE_INDEXES = 'require_indexes'
+ARG_ALLOW_SKIPPED_FILES = 'allow_skipped_files'
 ARG_SMTP_HOST = 'smtp_host'
 ARG_SMTP_PASSWORD = 'smtp_password'
 ARG_SMTP_PORT = 'smtp_port'
 ARG_SMTP_USER = 'smtp_user'
 ARG_STATIC_CACHING = 'static_caching'
 ARG_TEMPLATE_DIR = 'template_dir'
+ARG_TRUSTED = 'trusted'
 
-
-BASE_PATH = os.path.abspath(
-  os.path.join(os.path.dirname(dev_appserver.__file__), '../../../'))
+SDK_PATH = os.path.dirname(
+             os.path.dirname(
+               os.path.dirname(
+                 os.path.dirname(os_compat.__file__)
+               )
+             )
+           )
 
 DEFAULT_ARGS = {
   ARG_PORT: 8080,
@@ -112,7 +136,7 @@ DEFAULT_ARGS = {
   ARG_LOGIN_URL: '/_ah/login',
   ARG_CLEAR_DATASTORE: False,
   ARG_REQUIRE_INDEXES: False,
-  ARG_TEMPLATE_DIR: os.path.join(BASE_PATH, 'templates'),
+  ARG_TEMPLATE_DIR: os.path.join(SDK_PATH, 'templates'),
   ARG_SMTP_HOST: '',
   ARG_SMTP_PORT: 25,
   ARG_SMTP_USER: '',
@@ -123,8 +147,78 @@ DEFAULT_ARGS = {
   ARG_ADDRESS: 'localhost',
   ARG_ADMIN_CONSOLE_SERVER: DEFAULT_ADMIN_CONSOLE_SERVER,
   ARG_ADMIN_CONSOLE_HOST: None,
+  ARG_ALLOW_SKIPPED_FILES: False,
   ARG_STATIC_CACHING: True,
+  ARG_TRUSTED: False,
 }
+
+API_PATHS = {'1':
+             {'google': (),
+              'antlr3': ('lib', 'antlr3'),
+              'django': ('lib', 'django'),
+              'webob': ('lib', 'webob'),
+              'yaml': ('lib', 'yaml', 'lib'),
+              }
+             }
+
+DEFAULT_API_VERSION = '1'
+
+API_PATHS['test'] = API_PATHS[DEFAULT_API_VERSION].copy()
+API_PATHS['test']['_test'] = ('nonexistent', 'test', 'path')
+
+
+def SetPaths(app_config_path):
+  """Set the interpreter to use the specified API version.
+
+  The app.yaml file is scanned for the api_version field and the value is
+  extracted. With that information, the paths in API_PATHS are added to the
+  front of sys.paths to make sure that they take precedent over any other paths
+  to older versions of a package. All modules for each package set are cleared
+  out of sys.modules to make sure only the newest version is used.
+
+  Args:
+    - app_config_path: Path to the app.yaml file.
+  """
+  api_version_re = re.compile(r'api_version:\s*(?P<api_version>[\w.]{1,32})')
+  api_version = None
+  app_config_file = open(app_config_path, 'r')
+  try:
+    for line in app_config_file:
+      re_match = api_version_re.match(line)
+      if re_match:
+        api_version = re_match.group('api_version')
+        break
+  finally:
+    app_config_file.close()
+
+  if api_version is None:
+    logging.error("Application configuration file missing an 'api_version' "
+                  "value:\n%s" % app_config_path)
+    sys.exit(1)
+  if api_version not in API_PATHS:
+    logging.error("Value of %r for 'api_version' from the application "
+                  "configuration file is not valid:\n%s" %
+                    (api_version, app_config_path))
+    sys.exit(1)
+
+  if api_version == DEFAULT_API_VERSION:
+    return DEFAULT_API_VERSION
+
+  sdk_path = os.path.dirname(
+      os.path.dirname(
+        os.path.dirname(
+          os.path.dirname(os_compat.__file__)
+          )
+        )
+      )
+  for pkg_name, path_parts in API_PATHS[api_version].iteritems():
+    for name in sys.modules.keys():
+      if name == pkg_name or name.startswith('%s.' % pkg_name):
+        del sys.modules[name]
+    pkg_path = os.path.join(sdk_path, *path_parts)
+    sys.path.insert(0, pkg_path)
+
+  return api_version
 
 
 def PrintUsageExit(code):
@@ -163,6 +257,7 @@ def ParseArguments(argv):
       [ 'address=',
         'admin_console_server=',
         'admin_console_host=',
+        'allow_skipped_files',
         'auth_domain=',
         'clear_datastore',
         'datastore_path=',
@@ -180,6 +275,7 @@ def ParseArguments(argv):
         'smtp_port=',
         'smtp_user=',
         'template_dir=',
+        'trusted',
       ])
   except getopt.GetoptError, e:
     print >>sys.stderr, 'Error: %s' % e
@@ -205,10 +301,10 @@ def ParseArguments(argv):
       option_dict[ARG_ADDRESS] = value
 
     if option == '--datastore_path':
-      option_dict[ARG_DATASTORE_PATH] = value
+      option_dict[ARG_DATASTORE_PATH] = os.path.abspath(value)
 
     if option == '--history_path':
-      option_dict[ARG_HISTORY_PATH] = value
+      option_dict[ARG_HISTORY_PATH] = os.path.abspath(value)
 
     if option in ('-c', '--clear_datastore'):
       option_dict[ARG_CLEAR_DATASTORE] = True
@@ -241,10 +337,10 @@ def ParseArguments(argv):
       option_dict[ARG_SHOW_MAIL_BODY] = True
 
     if option == '--auth_domain':
-      dev_appserver.DEFAULT_ENV['AUTH_DOMAIN'] = value
+      option_dict['_DEFAULT_ENV_AUTH_DOMAIN'] = value
 
     if option == '--debug_imports':
-      dev_appserver.HardenedModulesHook.ENABLE_LOGGING = True
+      option_dict['_ENABLE_LOGGING'] = True
 
     if option == '--template_dir':
       option_dict[ARG_TEMPLATE_DIR] = value
@@ -255,8 +351,14 @@ def ParseArguments(argv):
     if option == '--admin_console_host':
       option_dict[ARG_ADMIN_CONSOLE_HOST] = value
 
+    if option == '--allow_skipped_files':
+      option_dict[ARG_ALLOW_SKIPPED_FILES] = True
+
     if option == '--disable_static_caching':
       option_dict[ARG_STATIC_CACHING] = False
+
+    if option == '--trusted':
+      option_dict[ARG_TRUSTED] = True
 
   return args, option_dict
 
@@ -282,6 +384,14 @@ def MakeRpcServer(option_dict):
   return server
 
 
+def SigTermHandler(signum, frame):
+  """Handler for TERM signal.
+
+  Raises a KeyboardInterrupt to perform a graceful shutdown on SIGTERM signal.
+  """
+  raise KeyboardInterrupt()
+
+
 def main(argv):
   """Runs the development application server."""
   args, option_dict = ParseArguments(argv)
@@ -291,6 +401,25 @@ def main(argv):
     PrintUsageExit(1)
 
   root_path = args[0]
+  for suffix in ('yaml', 'yml'):
+    path = os.path.join(root_path, 'app.%s' % suffix)
+    if os.path.exists(path):
+      api_version = SetPaths(path)
+      break
+  else:
+    logging.error("Application configuration file not found in %s" % root_path)
+    return 1
+
+  SetGlobals()
+  dev_appserver.API_VERSION = api_version
+
+  if '_DEFAULT_ENV_AUTH_DOMAIN' in option_dict:
+    auth_domain = option_dict['_DEFAULT_ENV_AUTH_DOMAIN']
+    dev_appserver.DEFAULT_ENV['AUTH_DOMAIN'] = auth_domain
+  if '_ENABLE_LOGGING' in option_dict:
+    enable_logging = option_dict['_ENABLE_LOGGING']
+    dev_appserver.HardenedModulesHook.ENABLE_LOGGING = enable_logging
+
   log_level = option_dict[ARG_LOG_LEVEL]
   port = option_dict[ARG_PORT]
   datastore_path = option_dict[ARG_DATASTORE_PATH]
@@ -298,11 +427,12 @@ def main(argv):
   template_dir = option_dict[ARG_TEMPLATE_DIR]
   serve_address = option_dict[ARG_ADDRESS]
   require_indexes = option_dict[ARG_REQUIRE_INDEXES]
+  allow_skipped_files = option_dict[ARG_ALLOW_SKIPPED_FILES]
   static_caching = option_dict[ARG_STATIC_CACHING]
 
-  logging.basicConfig(
-    level=log_level,
-    format='%(levelname)-8s %(asctime)s %(filename)s] %(message)s')
+  option_dict['root_path'] = os.path.realpath(root_path)
+
+  logging.getLogger().setLevel(log_level)
 
   config = None
   try:
@@ -331,13 +461,18 @@ def main(argv):
           exc_type, exc_value, exc_traceback)))
     return 1
 
-  http_server = dev_appserver.CreateServer(root_path,
-                                           login_url,
-                                           port,
-                                           template_dir,
-                                           serve_address=serve_address,
-                                           require_indexes=require_indexes,
-                                           static_caching=static_caching)
+  http_server = dev_appserver.CreateServer(
+      root_path,
+      login_url,
+      port,
+      template_dir,
+      sdk_dir=SDK_PATH,
+      serve_address=serve_address,
+      require_indexes=require_indexes,
+      allow_skipped_files=allow_skipped_files,
+      static_caching=static_caching)
+
+  signal.signal(signal.SIGTERM, SigTermHandler)
 
   logging.info('Running application %s on port %d: http://%s:%d',
                config.application, port, serve_address, port)
@@ -359,3 +494,5 @@ def main(argv):
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
+else:
+  SetGlobals()

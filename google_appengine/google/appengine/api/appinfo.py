@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-"""AppInfo tools
+"""AppInfo tools.
 
 Library for working with AppInfo records in memory, store and load from
 configuration files.
@@ -29,8 +29,8 @@ import re
 
 from google.appengine.api import appinfo_errors
 from google.appengine.api import validation
-from google.appengine.api import yaml_listener
 from google.appengine.api import yaml_builder
+from google.appengine.api import yaml_listener
 from google.appengine.api import yaml_object
 
 
@@ -40,11 +40,13 @@ _FILES_REGEX = r'(?!\^).*(?!\$).'
 _DELTA_REGEX = r'([1-9][0-9]*)([DdHhMm]|[sS]?)'
 _EXPIRATION_REGEX = r'\s*(%s)(\s+%s)*\s*' % (_DELTA_REGEX, _DELTA_REGEX)
 
+_SERVICE_RE_STRING = r'(mail|xmpp_message)'
+
 _EXPIRATION_CONVERSIONS = {
-  'd': 60 * 60 * 24,
-  'h': 60 * 60,
-  'm': 60,
-  's': 1,
+    'd': 60 * 60 * 24,
+    'h': 60 * 60,
+    'm': 60,
+    's': 1,
 }
 
 APP_ID_MAX_LEN = 100
@@ -55,6 +57,8 @@ APPLICATION_RE_STRING = r'(?!-)[a-z\d\-]{1,%d}' % APP_ID_MAX_LEN
 VERSION_RE_STRING = r'(?!-)[a-z\d\-]{1,%d}' % MAJOR_VERSION_ID_MAX_LEN
 
 RUNTIME_RE_STRING = r'[a-z]{1,30}'
+
+API_VERSION_RE_STRING = r'[\w.]{1,32}'
 
 HANDLER_STATIC_FILES = 'static_files'
 HANDLER_STATIC_DIR = 'static_dir'
@@ -67,18 +71,21 @@ LOGIN_ADMIN = 'admin'
 SECURE_HTTP = 'never'
 SECURE_HTTPS = 'always'
 SECURE_HTTP_OR_HTTPS = 'optional'
+SECURE_DEFAULT = 'default'
 
-DEFAULT_SKIP_FILES = (r"^(.*/)?("
-                      r"(app\.yaml)|"
-                      r"(app\.yml)|"
-                      r"(index\.yaml)|"
-                      r"(index\.yml)|"
-                      r"(#.*#)|"
-                      r"(.*~)|"
-                      r"(.*\.py[co])|"
-                      r"(.*/RCS/.*)|"
-                      r"(\..*)|"
-                      r")$")
+REQUIRE_MATCHING_FILE = 'require_matching_file'
+
+DEFAULT_SKIP_FILES = (r'^(.*/)?('
+                      r'(app\.yaml)|'
+                      r'(app\.yml)|'
+                      r'(index\.yaml)|'
+                      r'(index\.yml)|'
+                      r'(#.*#)|'
+                      r'(.*~)|'
+                      r'(.*\.py[co])|'
+                      r'(.*/RCS/.*)|'
+                      r'(\..*)|'
+                      r')$')
 
 LOGIN = 'login'
 SECURE = 'secure'
@@ -97,6 +104,7 @@ API_VERSION = 'api_version'
 HANDLERS = 'handlers'
 DEFAULT_EXPIRATION = 'default_expiration'
 SKIP_FILES = 'skip_files'
+SERVICES = 'inbound_services'
 
 
 class URLMap(validation.Validated):
@@ -172,39 +180,43 @@ class URLMap(validation.Validated):
 
   ATTRIBUTES = {
 
-    URL: validation.Optional(_URL_REGEX),
-    LOGIN: validation.Options(LOGIN_OPTIONAL,
-                              LOGIN_REQUIRED,
-                              LOGIN_ADMIN,
-                              default=LOGIN_OPTIONAL),
+      URL: validation.Optional(_URL_REGEX),
+      LOGIN: validation.Options(LOGIN_OPTIONAL,
+                                LOGIN_REQUIRED,
+                                LOGIN_ADMIN,
+                                default=LOGIN_OPTIONAL),
 
-    SECURE: validation.Options(SECURE_HTTP,
-                               SECURE_HTTPS,
-                               SECURE_HTTP_OR_HTTPS,
-                               default=SECURE_HTTP),
-
-
-
-    HANDLER_STATIC_FILES: validation.Optional(_FILES_REGEX),
-    UPLOAD: validation.Optional(_FILES_REGEX),
+      SECURE: validation.Options(SECURE_HTTP,
+                                 SECURE_HTTPS,
+                                 SECURE_HTTP_OR_HTTPS,
+                                 SECURE_DEFAULT,
+                                 default=SECURE_DEFAULT),
 
 
-    HANDLER_STATIC_DIR: validation.Optional(_FILES_REGEX),
+
+      HANDLER_STATIC_FILES: validation.Optional(_FILES_REGEX),
+      UPLOAD: validation.Optional(_FILES_REGEX),
 
 
-    MIME_TYPE: validation.Optional(str),
-    EXPIRATION: validation.Optional(_EXPIRATION_REGEX),
+      HANDLER_STATIC_DIR: validation.Optional(_FILES_REGEX),
 
 
-    HANDLER_SCRIPT: validation.Optional(_FILES_REGEX),
+      MIME_TYPE: validation.Optional(str),
+      EXPIRATION: validation.Optional(_EXPIRATION_REGEX),
+
+
+      HANDLER_SCRIPT: validation.Optional(_FILES_REGEX),
+
+      REQUIRE_MATCHING_FILE: validation.Optional(bool),
   }
 
   COMMON_FIELDS = set([URL, LOGIN, SECURE])
 
   ALLOWED_FIELDS = {
-    HANDLER_STATIC_FILES: (MIME_TYPE, UPLOAD, EXPIRATION),
-    HANDLER_STATIC_DIR: (MIME_TYPE, EXPIRATION),
-    HANDLER_SCRIPT: (),
+      HANDLER_STATIC_FILES: (MIME_TYPE, UPLOAD, EXPIRATION,
+                             REQUIRE_MATCHING_FILE),
+      HANDLER_STATIC_DIR: (MIME_TYPE, EXPIRATION, REQUIRE_MATCHING_FILE),
+      HANDLER_SCRIPT: (),
   }
 
   def GetHandler(self):
@@ -246,9 +258,9 @@ class URLMap(validation.Validated):
           not (attribute in allowed_fields or
                attribute in URLMap.COMMON_FIELDS or
                attribute == mapping_type)):
-            raise appinfo_errors.UnexpectedHandlerAttribute(
-                'Unexpected attribute "%s" for mapping type %s.' %
-                (attribute, mapping_type))
+        raise appinfo_errors.UnexpectedHandlerAttribute(
+            'Unexpected attribute "%s" for mapping type %s.' %
+            (attribute, mapping_type))
 
     if mapping_type == HANDLER_STATIC_FILES and not self.upload:
       raise appinfo_errors.MissingHandlerAttribute(
@@ -302,15 +314,18 @@ class AppInfoExternal(validation.Validated):
   ATTRIBUTES = {
 
 
-    APPLICATION: APPLICATION_RE_STRING,
-    VERSION: VERSION_RE_STRING,
-    RUNTIME: RUNTIME_RE_STRING,
+      APPLICATION: APPLICATION_RE_STRING,
+      VERSION: VERSION_RE_STRING,
+      RUNTIME: RUNTIME_RE_STRING,
 
 
-    API_VERSION: validation.Options('1', 'beta'),
-    HANDLERS: validation.Optional(validation.Repeated(URLMap)),
-    DEFAULT_EXPIRATION: validation.Optional(_EXPIRATION_REGEX),
-    SKIP_FILES: validation.RegexStr(default=DEFAULT_SKIP_FILES)
+      API_VERSION: API_VERSION_RE_STRING,
+      HANDLERS: validation.Optional(validation.Repeated(URLMap)),
+
+      SERVICES: validation.Optional(validation.Repeated(
+          validation.Regex(_SERVICE_RE_STRING))),
+      DEFAULT_EXPIRATION: validation.Optional(_EXPIRATION_REGEX),
+      SKIP_FILES: validation.RegexStr(default=DEFAULT_SKIP_FILES)
   }
 
   def CheckInitialized(self):
@@ -329,6 +344,19 @@ class AppInfoExternal(validation.Validated):
           'Found more than %d URLMap entries in application configuration' %
           MAX_URL_MAPS)
 
+  def FixSecureDefaults(self):
+    """Force omitted 'secure: ...' handler fields to 'secure: optional'.
+
+    The effect is that handler.secure is never equal to the (nominal)
+    default.
+
+    See http://b/issue?id=2073962.
+    """
+    if self.handlers:
+      for handler in self.handlers:
+        if handler.secure == SECURE_DEFAULT:
+          handler.secure = SECURE_HTTP_OR_HTTPS
+
 
 def LoadSingleAppInfo(app_info):
   """Load a single AppInfo object where one and only one is expected.
@@ -342,8 +370,9 @@ def LoadSingleAppInfo(app_info):
     An instance of AppInfoExternal as loaded from a YAML file.
 
   Raises:
-    EmptyConfigurationFile when there are no documents in YAML file.
-    MultipleConfigurationFile when there is more than one document in YAML
+    ValueError: if a specified service is not valid.
+    EmptyConfigurationFile: when there are no documents in YAML file.
+    MultipleConfigurationFile: when there is more than one document in YAML
     file.
   """
   builder = yaml_object.ObjectBuilder(AppInfoExternal)
@@ -356,6 +385,7 @@ def LoadSingleAppInfo(app_info):
     raise appinfo_errors.EmptyConfigurationFile()
   if len(app_infos) > 1:
     raise appinfo_errors.MultipleConfigurationFile()
+  app_infos[0].FixSecureDefaults()
   return app_infos[0]
 
 
@@ -379,7 +409,7 @@ def ParseExpiration(expiration):
 
 _file_path_positive_re = re.compile(r'^[ 0-9a-zA-Z\._\+/\$-]{1,256}$')
 
-_file_path_negative_1_re = re.compile(r'\.\.|^\./|\.$|/\./|^-')
+_file_path_negative_1_re = re.compile(r'\.\.|^\./|\.$|/\./|^-|^_ah/')
 
 _file_path_negative_2_re = re.compile(r'//|/$')
 
@@ -406,7 +436,8 @@ def ValidFilename(filename):
   if _file_path_positive_re.match(filename) is None:
     return 'Invalid character in filename: %s' % filename
   if _file_path_negative_1_re.search(filename) is not None:
-    return ('Filename cannot contain "." or ".." or start with "-": %s' %
+    return ('Filename cannot contain "." or ".." '
+            'or start with "-" or "_ah/": %s' %
             filename)
   if _file_path_negative_2_re.search(filename) is not None:
     return 'Filename cannot have trailing / or contain //: %s' % filename

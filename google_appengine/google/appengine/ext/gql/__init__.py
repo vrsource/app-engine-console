@@ -28,7 +28,6 @@ data stored.
 
 import calendar
 import datetime
-import heapq
 import logging
 import re
 import time
@@ -38,6 +37,7 @@ from google.appengine.api import datastore_errors
 from google.appengine.api import datastore_types
 from google.appengine.api import users
 
+MultiQuery = datastore.MultiQuery
 
 LOG_LEVEL = logging.DEBUG - 1
 
@@ -77,7 +77,7 @@ class GQL(object):
 
   The syntax for SELECT is fairly straightforward:
 
-  SELECT * FROM <entity>
+  SELECT [* | __key__ ] [FROM <entity>]
     [WHERE <condition> [AND <condition> ...]]
     [ORDER BY <property> [ASC | DESC] [, <property> [ASC | DESC] ...]]
     [LIMIT [<offset>,]<count>]
@@ -104,7 +104,7 @@ class GQL(object):
   Execute('SELECT * FROM Story WHERE Author = :1 AND Date > :2')
   - Named parameters
   Execute('SELECT * FROM Story WHERE Author = :author AND Date > :date')
-  - Literals (numbers, and strings)
+  - Literals (numbers, strings, booleans, and NULL)
   Execute('SELECT * FROM Story WHERE Author = \'James\'')
 
   Users are also given the option of doing type conversions to other datastore
@@ -144,9 +144,8 @@ class GQL(object):
       simple types (strings, integers, floats).
 
 
-  SELECT * will return an iterable set of entries, but other operations (schema
-  queries, updates, inserts or field selections) will return alternative
-  result types.
+  SELECT * will return an iterable set of entities; SELECT __key__ will return
+  an iterable set of Keys.
   """
 
   TOKENIZE_REGEX = re.compile(r"""
@@ -161,7 +160,7 @@ class GQL(object):
     \S+
     """, re.VERBOSE | re.IGNORECASE)
 
-  MAX_ALLOWABLE_QUERIES = 30
+  MAX_ALLOWABLE_QUERIES = datastore.MAX_ALLOWABLE_QUERIES
 
   __ANCESTOR = -1
 
@@ -229,7 +228,8 @@ class GQL(object):
       query_count = 1
 
     for i in xrange(query_count):
-      queries.append(datastore.Query(self._entity, _app=self.__app))
+      queries.append(datastore.Query(self._entity, _app=self.__app,
+                                     keys_only=self._keys_only))
 
     logging.log(LOG_LEVEL,
                 'Binding with %i positional args %s and %i keywords %s'
@@ -327,11 +327,11 @@ class GQL(object):
     """Cast input values to Key() class using encoded string or tuple list."""
     if not len(values) % 2:
       return datastore_types.Key.from_path(_app=self.__app, *values)
-    elif len(values) == 1 and isinstance(values[0], str):
+    elif len(values) == 1 and isinstance(values[0], basestring):
       return datastore_types.Key(values[0])
     else:
       self.__CastError('KEY', values,
-                       'requires an even number of operands'
+                       'requires an even number of operands '
                        'or a single encoded string')
 
   def __CastGeoPt(self, values):
@@ -343,41 +343,120 @@ class GQL(object):
   def __CastUser(self, values):
     """Cast to User() class using the email address in values[0]."""
     if len(values) != 1:
-      self.__CastError(values, 'user', 'requires one and only one value')
+      self.__CastError('user', values, 'requires one and only one value')
+    elif values[0] is None:
+      self.__CastError('user', values, 'must be non-null')
     else:
       return users.User(email=values[0], _auth_domain=self.__auth_domain)
 
+  def __EncodeIfNeeded(self, value):
+    """Simple helper function to create an str from possibly unicode strings.
+    Args:
+      value: input string (should pass as an instance of str or unicode).
+    """
+    if isinstance(value, unicode):
+      return value.encode('utf8')
+    else:
+      return value
+
   def __CastDate(self, values):
-    """Cast date values to DATETIME() class using ISO string or tuple inputs."""
-    try:
-      if len(values) == 1 and isinstance(values[0], str):
-        time_tuple = time.strptime(values[0], '%Y-%m-%d')
-        return datetime.datetime(*time_tuple[0:6])
+    """Cast DATE values (year/month/day) from input (to datetime.datetime).
+
+    Casts DATE input values formulated as ISO string or time tuple inputs.
+
+    Args:
+      values: either a single string with ISO time representation or 3
+              integer valued date tuple (year, month, day).
+
+    Returns:
+      datetime.datetime value parsed from the input values.
+    """
+
+    if len(values) == 1:
+      value = self.__EncodeIfNeeded(values[0])
+      if isinstance(value, str):
+        try:
+          time_tuple = time.strptime(value, '%Y-%m-%d')[0:6]
+        except ValueError, err:
+          self.__CastError('DATE', values, err)
       else:
-        return datetime.datetime(values[0], values[1], values[2], 0, 0, 0)
+        self.__CastError('DATE', values, 'Single input value not a string')
+    elif len(values) == 3:
+      time_tuple = (values[0], values[1], values[2], 0, 0, 0)
+    else:
+      self.__CastError('DATE', values,
+                       'function takes 1 string or 3 integer values')
+
+    try:
+      return datetime.datetime(*time_tuple)
     except ValueError, err:
       self.__CastError('DATE', values, err)
 
   def __CastTime(self, values):
-    """Cast time values to DATETIME() class using ISO string or tuple inputs."""
-    try:
-      if len(values) == 1 and isinstance(values[0], str):
-        time_tuple = time.strptime(values[0], '%H:%M:%S')
+    """Cast TIME values (hour/min/sec) from input (to datetime.datetime).
+
+    Casts TIME input values formulated as ISO string or time tuple inputs.
+
+    Args:
+      values: either a single string with ISO time representation or 1-4
+              integer valued time tuple (hour), (hour, minute),
+              (hour, minute, second), (hour, minute, second, microsec).
+
+    Returns:
+      datetime.datetime value parsed from the input values.
+    """
+    if len(values) == 1:
+      value = self.__EncodeIfNeeded(values[0])
+      if isinstance(value, str):
+        try:
+          time_tuple = time.strptime(value, '%H:%M:%S')
+        except ValueError, err:
+          self.__CastError('TIME', values, err)
         time_tuple = (1970, 1, 1) + time_tuple[3:]
-        return datetime.datetime(*time_tuple[0:6])
+        time_tuple = time_tuple[0:6]
+      elif isinstance(value, int):
+        time_tuple = (1970, 1, 1, value)
       else:
-        return datetime.datetime(1970, 1, 1, *values)
+        self.__CastError('TIME', values,
+                         'Single input value not a string or integer hour')
+    elif len(values) <= 4:
+      time_tuple = (1970, 1, 1) + tuple(values)
+    else:
+      self.__CastError('TIME', values,
+                       'function takes 1 to 4 integers or 1 string')
+
+    try:
+      return datetime.datetime(*time_tuple)
     except ValueError, err:
       self.__CastError('TIME', values, err)
 
   def __CastDatetime(self, values):
-    """Cast values to DATETIME() class using ISO string or tuple inputs."""
-    try:
-      if len(values) == 1 and isinstance(values[0], str):
-        time_tuple = time.strptime(values[0], '%Y-%m-%d %H:%M:%S')
-        return datetime.datetime(*time_tuple[0:6])
+    """Cast DATETIME values (string or tuple) from input (to datetime.datetime).
+
+    Casts DATETIME input values formulated as ISO string or datetime tuple
+    inputs.
+
+    Args:
+      values: either a single string with ISO representation or 3-7
+              integer valued time tuple (year, month, day, ...).
+
+    Returns:
+      datetime.datetime value parsed from the input values.
+    """
+    if len(values) == 1:
+      value = self.__EncodeIfNeeded(values[0])
+      if isinstance(value, str):
+        try:
+          time_tuple = time.strptime(str(value), '%Y-%m-%d %H:%M:%S')[0:6]
+        except ValueError, err:
+          self.__CastError('DATETIME', values, err)
       else:
-        return datetime.datetime(*values)
+        self.__CastError('DATETIME', values, 'Single input value not a string')
+    else:
+      time_tuple = values
+
+    try:
+      return datetime.datetime(*time_tuple)
     except ValueError, err:
       self.__CastError('DATETIME', values, err)
 
@@ -454,7 +533,7 @@ class GQL(object):
         raise datastore_errors.BadArgumentError(
             'Missing argument for bind, requires argument #%i, '
             'but only has %i args.' % (reference, num_args))
-    elif isinstance(reference, str):
+    elif isinstance(reference, basestring):
       if reference in keyword_args:
         return keyword_args[reference]
       else:
@@ -476,6 +555,9 @@ class GQL(object):
     Raises:
       BadArgumentError if the filter is invalid (namely non-list with IN)
     """
+    if condition.lower() in ('!=', 'in') and self._keys_only:
+      raise datastore_errors.BadQueryError(
+        'Keys only queries do not support IN or != filters.')
 
     def CloneQueries(queries, n):
       """Do a full copy of the queries and append to the end of the queries.
@@ -597,8 +679,13 @@ class GQL(object):
     """Return the result ordering list."""
     return self.__orderings
 
+  def is_keys_only(self):
+    """Returns True if this query returns Keys, False if it returns Entities."""
+    return self._keys_only
+
   __iter__ = Run
 
+  __result_type_regex = re.compile(r'(\*|__key__)')
   __quoted_string_regex = re.compile(r'((?:\'[^\'\n\r]*\')+)')
   __ordinal_regex = re.compile(r':(\d+)$')
   __named_regex = re.compile(r':(\w+)$')
@@ -707,7 +794,8 @@ class GQL(object):
       True if parsing completed okay.
     """
     self.__Expect('SELECT')
-    self.__Expect('*')
+    result_type = self.__AcceptRegex(self.__result_type_regex)
+    self._keys_only = (result_type == '__key__')
     return self.__From()
 
   def __From(self):
@@ -720,14 +808,16 @@ class GQL(object):
     Returns:
       True if parsing completed okay.
     """
-    self.__Expect('FROM')
-    entity = self.__AcceptRegex(self.__identifier_regex)
-    if entity:
-      self._entity = entity
-      return self.__Where()
+    if self.__Accept('FROM'):
+      kind = self.__AcceptRegex(self.__identifier_regex)
+      if kind:
+        self._entity = kind
+      else:
+        self.__Error('Identifier Expected')
+        return False
     else:
-      self.__Error('Identifier Expected')
-      return False
+      self._entity = None
+    return self.__Where()
 
   def __Where(self):
     """Consume the WHERE cluase.
@@ -842,8 +932,8 @@ class GQL(object):
       filter_rule = (self.__ANCESTOR, 'is')
       assert condition.lower() == 'is'
 
-    if condition.lower() != 'in' and operator == 'list':
-      sef.__Error('Only IN can process a list of values')
+    if operator == 'list' and condition.lower() != 'in':
+      self.__Error('Only IN can process a list of values')
 
     self.__filters.setdefault(filter_rule, []).append((operator, parameters))
     return True
@@ -921,6 +1011,9 @@ class GQL(object):
 
     if literal is not None:
       return Literal(literal)
+
+    if self.__Accept('NULL'):
+      return Literal(None)
     else:
       return None
 
@@ -1062,220 +1155,3 @@ class Literal(object):
 
   def __repr__(self):
     return 'Literal(%s)' % repr(self.__value)
-
-
-class MultiQuery(datastore.Query):
-  """Class representing a GQL query requiring multiple datastore queries.
-
-  This class is actually a subclass of datastore.Query as it is intended to act
-  like a normal Query object (supporting the same interface).
-  """
-
-  def __init__(self, bound_queries, orderings):
-    self.__bound_queries = bound_queries
-    self.__orderings = orderings
-
-  def __str__(self):
-    res = 'MultiQuery: '
-    for query in self.__bound_queries:
-      res = '%s %s' % (res, str(query))
-    return res
-
-  def Get(self, limit, offset=0):
-    """Get results of the query with a limit on the number of results.
-
-    Args:
-      limit: maximum number of values to return.
-      offset: offset requested -- if nonzero, this will override the offset in
-              the original query
-
-    Returns:
-      A list of entities with at most "limit" entries (less if the query
-      completes before reading limit values).
-    """
-    count = 1
-    result = []
-
-    iterator = self.Run()
-
-    try:
-      for i in xrange(offset):
-        val = iterator.next()
-    except StopIteration:
-      pass
-
-    try:
-      while count <= limit:
-        val = iterator.next()
-        result.append(val)
-        count += 1
-    except StopIteration:
-      pass
-    return result
-
-  class SortOrderEntity(object):
-    def __init__(self, entity_iterator, orderings):
-      self.__entity_iterator = entity_iterator
-      self.__entity = None
-      self.__min_max_value_cache = {}
-      try:
-        self.__entity = entity_iterator.next()
-      except StopIteration:
-        pass
-      else:
-        self.__orderings = orderings
-
-    def __str__(self):
-      return str(self.__entity)
-
-    def GetEntity(self):
-      return self.__entity
-
-    def GetNext(self):
-      return MultiQuery.SortOrderEntity(self.__entity_iterator,
-                                        self.__orderings)
-
-    def CmpProperties(self, that):
-      """Compare two entities and return their relative order.
-
-      Compares self to that based on the current sort orderings and the
-      key orders between them. Returns negative, 0, or positive depending on
-      whether self is less, equal to, or greater than that. This
-      comparison returns as if all values were to be placed in ascending order
-      (highest value last).  Only uses the sort orderings to compare (ignores
-       keys).
-
-      Args:
-        self: SortOrderEntity
-        that: SortOrderEntity
-
-      Returns:
-        Negative if self < that
-        Zero if self == that
-        Positive if self > that
-      """
-      if not self.__entity:
-        return cmp(self.__entity, that.__entity)
-
-      for (identifier, order) in self.__orderings:
-        value1 = self.__GetValueForId(self, identifier, order)
-        value2 = self.__GetValueForId(that, identifier, order)
-
-        result = cmp(value1, value2)
-        if order == datastore.Query.DESCENDING:
-          result = -result
-        if result:
-          return result
-      return 0
-
-    def __GetValueForId(self, sort_order_entity, identifier, sort_order):
-      value = sort_order_entity.__entity[identifier]
-      entity_key = sort_order_entity.__entity.key()
-      if self.__min_max_value_cache.has_key((entity_key, identifier)):
-        value = self.__min_max_value_cache[(entity_key, identifier)]
-      elif isinstance(value, list):
-        if sort_order == datastore.Query.DESCENDING:
-          value = min(value)
-        else:
-          value = max(value)
-        self.__min_max_value_cache[(entity_key, identifier)] = value
-
-      return value
-
-    def __cmp__(self, that):
-      """Compare self to that w.r.t. values defined in the sort order.
-
-      Compare an entity with another, using sort-order first, then the key
-      order to break ties. This can be used in a heap to have faster min-value
-      lookup.
-
-      Args:
-        that: other entity to compare to
-      Returns:
-        negative: if self is less than that in sort order
-        zero: if self is equal to that in sort order
-        positive: if self is greater than that in sort order
-      """
-      property_compare = self.CmpProperties(that)
-      if property_compare:
-        return property_compare
-      else:
-        return cmp(self.__entity.key(), that.__entity.key())
-
-  def Run(self):
-    """Return an iterable output with all results in order."""
-    results = []
-    count = 1
-    for bound_query in self.__bound_queries:
-      logging.log(LOG_LEVEL, 'Running query #%i' % count)
-      results.append(bound_query.Run())
-      count += 1
-
-    def IterateResults(results):
-      """Iterator function to return all results in sorted order.
-
-      Iterate over the array of results, yielding the next element, in
-      sorted order. This function is destructive (results will be empty
-      when the operation is complete).
-
-      Args:
-        results: list of result iterators to merge and iterate through
-
-      Yields:
-        The next result in sorted order.
-      """
-      result_heap = []
-      for result in results:
-        heap_value = MultiQuery.SortOrderEntity(result, self.__orderings)
-        if heap_value.GetEntity():
-          heapq.heappush(result_heap, heap_value)
-
-      used_keys = set()
-
-      while result_heap:
-        top_result = heapq.heappop(result_heap)
-
-        results_to_push = []
-        if top_result.GetEntity().key() not in used_keys:
-          yield top_result.GetEntity()
-        else:
-          pass
-
-        used_keys.add(top_result.GetEntity().key())
-
-        results_to_push = []
-        while result_heap:
-          next = heapq.heappop(result_heap)
-          if cmp(top_result, next):
-            results_to_push.append(next)
-            break
-          else:
-            results_to_push.append(next.GetNext())
-        results_to_push.append(top_result.GetNext())
-
-        for popped_result in results_to_push:
-          if popped_result.GetEntity():
-            heapq.heappush(result_heap, popped_result)
-
-    return IterateResults(results)
-
-  def Count(self, limit=None):
-    """Return the number of matched entities for this query.
-
-    Will return the de-duplicated count of results.  Will call the more
-    efficient Get() function if a limit is given.
-
-    Args:
-      limit: maximum number of entries to count (for any result > limit, return
-      limit).
-    Returns:
-      count of the number of entries returned.
-    """
-    if limit is None:
-      count = 0
-      for value in self.Run():
-        count += 1
-      return count
-    else:
-      return len(self.Get(limit))
-

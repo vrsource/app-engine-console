@@ -77,15 +77,21 @@ preconfigured to return all matching comments:
 
 
 
+
+import base64
+import copy
 import datetime
 import logging
+import re
 import time
 import urlparse
+import warnings
 
 from google.appengine.api import datastore
 from google.appengine.api import datastore_errors
 from google.appengine.api import datastore_types
 from google.appengine.api import users
+from google.appengine.datastore import datastore_pb
 
 Error = datastore_errors.Error
 BadValueError = datastore_errors.BadValueError
@@ -118,6 +124,10 @@ Rating = datastore_types.Rating
 Text = datastore_types.Text
 Blob = datastore_types.Blob
 ByteString = datastore_types.ByteString
+BlobKey = datastore_types.BlobKey
+
+READ_CAPABILITY = datastore.READ_CAPABILITY
+WRITE_CAPABILITY = datastore.WRITE_CAPABILITY
 
 _kind_map = {}
 
@@ -182,10 +192,16 @@ _ALLOWED_PROPERTY_TYPES = set([
     PhoneNumber,
     PostalAddress,
     Rating,
+    BlobKey,
     ])
 
 _ALLOWED_EXPANDO_PROPERTY_TYPES = set(_ALLOWED_PROPERTY_TYPES)
 _ALLOWED_EXPANDO_PROPERTY_TYPES.update((list, tuple, type(None)))
+
+_OPERATORS = ['<', '<=', '>', '>=', '=', '==', '!=', 'in']
+_FILTER_REGEX = re.compile(
+    '^\s*([^\s]+)(\s+(%s)\s*)?$' % '|'.join(_OPERATORS),
+    re.IGNORECASE | re.UNICODE)
 
 
 def class_for_kind(kind):
@@ -232,6 +248,49 @@ def check_reserved_word(attr_name):
         "definition." % locals())
 
 
+def query_descendants(model_instance):
+  """Returns a query for all the descendants of a model instance.
+
+  Args:
+    model_instance: Model instance to find the descendants of.
+
+  Returns:
+    Query that will retrieve all entities that have the given model instance
+  as an ancestor. Unlike normal ancestor queries, this does not include the
+  ancestor itself.
+  """
+
+  result = Query().ancestor(model_instance);
+  result.filter(datastore_types._KEY_SPECIAL_PROPERTY + ' >',
+                model_instance.key());
+  return result;
+
+
+def model_to_protobuf(model_instance, _entity_class=datastore.Entity):
+  """Encodes a model instance as a protocol buffer.
+
+  Args:
+    model_instance: Model instance to encode.
+  Returns:
+    entity_pb.EntityProto representation of the model instance
+  """
+  return model_instance._populate_entity(_entity_class).ToPb()
+
+
+def model_from_protobuf(pb, _entity_class=datastore.Entity):
+  """Decodes a model instance from a protocol buffer.
+
+  Args:
+    pb: The protocol buffer representation of the model instance. Can be an
+        entity_pb.EntityProto or str encoding of an entity_bp.EntityProto
+
+  Returns:
+    Model instance resulting from decoding the protocol buffer
+  """
+  entity = _entity_class.FromPb(pb)
+  return class_for_kind(entity.kind()).from_entity(entity)
+
+
 def _initialize_properties(model_class, name, bases, dct):
   """Initialize Property attributes for Model-class.
 
@@ -239,17 +298,31 @@ def _initialize_properties(model_class, name, bases, dct):
     model_class: Model class to initialize properties for.
   """
   model_class._properties = {}
+  property_source = {}
+
+  def get_attr_source(name, cls):
+    for src_cls  in cls.mro():
+      if name in src_cls.__dict__:
+        return src_cls
+
   defined = set()
   for base in bases:
     if hasattr(base, '_properties'):
-      property_keys = base._properties.keys()
-      duplicate_properties = defined.intersection(property_keys)
-      if duplicate_properties:
-        raise DuplicatePropertyError(
-            'Duplicate properties in base class %s already defined: %s' %
-            (base.__name__, list(duplicate_properties)))
-      defined.update(property_keys)
-      model_class._properties.update(base._properties)
+      property_keys = set(base._properties.keys())
+      duplicate_property_keys = defined & property_keys
+      for dupe_prop_name in duplicate_property_keys:
+        old_source = property_source[dupe_prop_name] = get_attr_source(
+            dupe_prop_name, property_source[dupe_prop_name])
+        new_source = get_attr_source(dupe_prop_name, base)
+        if old_source != new_source:
+          raise DuplicatePropertyError(
+              'Duplicate property, %s, is inherited from both %s and %s.' %
+              (dupe_prop_name, old_source.__name__, new_source.__name__))
+      property_keys -= duplicate_property_keys
+      if property_keys:
+        defined |= property_keys
+        property_source.update(dict.fromkeys(property_keys, base))
+        model_class._properties.update(base._properties)
 
   for attr_name in dct.keys():
     attr = dct[attr_name]
@@ -260,6 +333,9 @@ def _initialize_properties(model_class, name, bases, dct):
       defined.add(attr_name)
       model_class._properties[attr_name] = attr
       attr.__property_config__(model_class, attr_name)
+
+  model_class._unindexed_properties = frozenset(
+    name for name, prop in model_class._properties.items() if not prop.indexed)
 
 
 class PropertiedClass(type):
@@ -328,8 +404,14 @@ class Property(object):
 
   creation_counter = 0
 
-  def __init__(self, verbose_name=None, name=None, default=None,
-               required=False, validator=None, choices=None):
+  def __init__(self,
+               verbose_name=None,
+               name=None,
+               default=None,
+               required=False,
+               validator=None,
+               choices=None,
+               indexed=True):
     """Initializes this Property with the given options.
 
     Args:
@@ -340,6 +422,7 @@ class Property(object):
       required: Whether property is required.
       validator: User provided method used for validation.
       choices: User provided set of valid property values.
+      indexed: Whether property is indexed.
     """
     self.verbose_name = verbose_name
     self.name = name
@@ -347,6 +430,7 @@ class Property(object):
     self.required = required
     self.validator = validator
     self.choices = choices
+    self.indexed = indexed
     self.creation_counter = Property.creation_counter
     Property.creation_counter += 1
 
@@ -481,6 +565,21 @@ class Property(object):
     """
     return value
 
+  def _require_parameter(self, kwds, parameter, value):
+    """Sets kwds[parameter] to value.
+
+    If kwds[parameter] exists and is not value, raises ConfigurationError.
+
+    Args:
+      kwds: The parameter dict, which maps parameter names (strings) to values.
+      parameter: The name of the parameter to set.
+      value: The value to set it to.
+    """
+    if parameter in kwds and kwds[parameter] != value:
+      raise ConfigurationError('%s must be %s.' % (parameter, value))
+
+    kwds[parameter] = value
+
   def _attr_name(self):
     """Attribute name we use for this property in model instances.
 
@@ -522,17 +621,18 @@ class Model(object):
   def __init__(self,
                parent=None,
                key_name=None,
+               key=None,
                _app=None,
                _from_entity=False,
                **kwds):
     """Creates a new instance of this model.
 
-    To create a new entity, you instantiate a model and then call save(),
+    To create a new entity, you instantiate a model and then call put(),
     which saves the entity to the datastore:
 
        person = Person()
        person.name = 'Bret'
-       person.save()
+       person.put()
 
     You can initialize properties in the model in the constructor with keyword
     arguments:
@@ -547,38 +647,64 @@ class Model(object):
       parent: Parent instance for this instance or None, indicating a top-
         level instance.
       key_name: Name for new model instance.
-      _app: Intentionally undocumented.
+      key: Key instance for this instance, overrides parent and key_name
       _from_entity: Intentionally undocumented.
       args: Keyword arguments mapping to properties of model.
     """
-    if key_name == '':
-      raise BadKeyError('Name cannot be empty.')
-    elif key_name is not None and not isinstance(key_name, basestring):
-      raise BadKeyError('Name must be string type, not %s' %
-                        key_name.__class__.__name__)
-
-    if parent is not None:
-      if not isinstance(parent, (Model, Key)):
-        raise TypeError('Expected Model type; received %s (is %s)' %
-                        (parent, parent.__class__.__name__))
-      if isinstance(parent, Model) and not parent.has_key():
-        raise BadValueError(
-            "%s instance must have a complete key before it can be used as a "
-            "parent." % parent.kind())
-      if isinstance(parent, Key):
-        self._parent_key = parent
-        self._parent = None
-      else:
-        self._parent_key = parent.key()
-        self._parent = parent
-    else:
-      self._parent_key = None
+    if key is not None:
+      if isinstance(key, (tuple, list)):
+        key = Key.from_path(*key)
+      if isinstance(key, basestring):
+        key = Key(encoded=key)
+      if not isinstance(key, Key):
+        raise TypeError('Expected Key type; received %s (is %s)' %
+                        (key, key.__class__.__name__))
+      if not key.has_id_or_name():
+        raise BadKeyError('Key must have an id or name')
+      if key.kind() != self.kind():
+        raise BadKeyError('Expected Key kind to be %s; received %s' %
+                          (self.kind(), key.kind()))
+      if _app is not None and key.app() != _app:
+        raise BadKeyError('Expected Key app to be %s; received %s' %
+                          (_app, key.app()))
+      if key_name is not None:
+        raise BadArgumentError('Cannot use key and key_name at the same time')
+      if parent is not None:
+        raise BadArgumentError('Cannot use key and parent at the same time')
+      self._key = key
+      self._key_name = None
       self._parent = None
+      self._parent_key = None
+    else:
+      if key_name == '':
+        raise BadKeyError('Name cannot be empty.')
+      elif key_name is not None and not isinstance(key_name, basestring):
+        raise BadKeyError('Name must be string type, not %s' %
+                          key_name.__class__.__name__)
+
+      if parent is not None:
+        if not isinstance(parent, (Model, Key)):
+          raise TypeError('Expected Model type; received %s (is %s)' %
+                          (parent, parent.__class__.__name__))
+        if isinstance(parent, Model) and not parent.has_key():
+          raise BadValueError(
+              "%s instance must have a complete key before it can be used as a "
+              "parent." % parent.kind())
+        if isinstance(parent, Key):
+          self._parent_key = parent
+          self._parent = None
+        else:
+          self._parent_key = parent.key()
+          self._parent = parent
+      else:
+        self._parent_key = None
+        self._parent = None
+      self._key_name = key_name
+      self._key = None
+
     self._entity = None
-    self._key_name = key_name
     self._app = _app
 
-    properties = self.properties()
     for prop in self.properties().values():
       if prop.name in kwds:
         value = kwds[prop.name]
@@ -594,8 +720,9 @@ class Model(object):
     """Unique key for this entity.
 
     This property is only available if this entity is already stored in the
-    datastore, so it is available if this entity was fetched returned from a
-    query, or after save() is called the first time for new entities.
+    datastore or if it has a full key, so it is available if this entity was
+    fetched returned from a query, or after put() is called the first time
+    for new entities, or if a complete key was given when constructed.
 
     Returns:
       Datastore key of persisted entity.
@@ -605,9 +732,12 @@ class Model(object):
     """
     if self.is_saved():
       return self._entity.key()
+    elif self._key:
+      return self._key
     elif self._key_name:
-      parent = self._parent and self._parent.key()
-      return Key.from_path(self.kind(), self._key_name, parent=parent)
+      parent = self._parent_key or (self._parent and self._parent.key())
+      self._key = Key.from_path(self.kind(), self._key_name, parent=parent)
+      return self._key
     else:
       raise NotSavedError()
 
@@ -636,8 +766,11 @@ class Model(object):
       Populated self._entity
     """
     self._entity = self._populate_entity(_entity_class=_entity_class)
-    if hasattr(self, '_key_name'):
-      del self._key_name
+    for attr in ('_key_name', '_key'):
+      try:
+        delattr(self, attr)
+      except AttributeError:
+        pass
     return self._entity
 
   def put(self):
@@ -673,20 +806,23 @@ class Model(object):
     if self.is_saved():
       entity = self._entity
     else:
-      if self._parent_key is not None:
-        entity = _entity_class(self.kind(),
-                               parent=self._parent_key,
-                               name=self._key_name,
-                               _app=self._app)
-      elif self._parent is not None:
-        entity = _entity_class(self.kind(),
-                               parent=self._parent._entity,
-                               name=self._key_name,
-                               _app=self._app)
+      kwds = {'_app': self._app,
+              'unindexed_properties': self._unindexed_properties}
+      if self._key is not None:
+        if self._key.id():
+          kwds['id'] = self._key.id()
+        else:
+          kwds['name'] = self._key.name()
+        if self._key.parent():
+          kwds['parent'] = self._key.parent()
       else:
-        entity = _entity_class(self.kind(),
-                               name=self._key_name,
-                               _app=self._app)
+        if self._key_name is not None:
+          kwds['name'] = self._key_name
+        if self._parent_key is not None:
+          kwds['parent'] = self._parent_key
+        elif self._parent is not None:
+          kwds['parent'] = self._parent._entity
+      entity = _entity_class(self.kind(), **kwds)
 
     self._to_entity(entity)
     return entity
@@ -715,14 +851,15 @@ class Model(object):
   def has_key(self):
     """Determine if this model instance has a complete key.
 
-    Ids are not assigned until the data is saved to the Datastore, but
-    instances with a key name always have a full key.
+    When not using a fully self-assigned Key, ids are not assigned until the
+    data is saved to the Datastore, but instances with a key name always have
+    a full key.
 
     Returns:
-      True if the object has been persisted to the datastore or has a key_name,
-      otherwise False.
+      True if the object has been persisted to the datastore or has a key
+      or has a key_name, otherwise False.
     """
-    return self.is_saved() or self._key_name
+    return self.is_saved() or self._key or self._key_name
 
   def dynamic_properties(self):
     """Returns a list of all dynamic properties defined for instance."""
@@ -760,6 +897,8 @@ class Model(object):
       return self._parent.key()
     elif self._entity is not None:
       return self._entity.parent()
+    elif self._key is not None:
+      return self._key.parent()
     else:
       return None
 
@@ -920,13 +1059,13 @@ class Model(object):
     return run_in_transaction(txn)
 
   @classmethod
-  def all(cls):
+  def all(cls, **kwds):
     """Returns a query over all instances of this model from the datastore.
 
     Returns:
       Query that will retrieve all instances from entity collection.
     """
-    return Query(cls)
+    return Query(cls, **kwds)
 
   @classmethod
   def gql(cls, query_string, *args, **kwds):
@@ -983,8 +1122,12 @@ class Model(object):
 
     entity_values = cls._load_entity_values(entity)
     instance = cls(None, _from_entity=True, **entity_values)
-    instance._entity = entity
-    del instance._key_name
+    if entity.is_saved():
+      instance._entity = entity
+      del instance._key_name
+      del instance._key
+    elif entity.key().has_id_or_name():
+      instance._key = entity.key()
     return instance
 
   @classmethod
@@ -1092,6 +1235,33 @@ def delete(models):
     keys.append(key)
   datastore.Delete(keys)
 
+def allocate_ids(model, size):
+  """Allocates a range of IDs of size for the model_key defined by model
+
+  Allocates a range of IDs in the datastore such that those IDs will not
+  be automatically assigned to new entities. You can only allocate IDs
+  for model keys from your app. If there is an error, raises a subclass of
+  datastore_errors.Error.
+
+  Args:
+    model: Model, Key or string to serve as a model specifying the ID sequence
+           in which to allocate IDs
+
+  Returns:
+    (start, end) of the allocated range, inclusive.
+  """
+  models_or_keys, multiple = datastore.NormalizeAndTypeCheck(
+      model, (Model, Key, basestring))
+  keys = []
+  for model_or_key in models_or_keys:
+    if isinstance(model_or_key, Model):
+      key = model_or_key = model_or_key.key()
+    elif isinstance(model_or_key, basestring):
+      key = model_or_key = Key(model_or_key)
+    else:
+      key = model_or_key
+    keys.append(key)
+  return datastore.AllocateIds(keys, size)
 
 class Expando(Model):
   """Dynamically expandable model.
@@ -1143,7 +1313,7 @@ class Expando(Model):
 
     1 - Because it is not possible for the datastore to know what kind of
         property to store on an undefined expando value, setting a property to
-        None is the same as deleting it form the expando.
+        None is the same as deleting it from the expando.
 
     2 - Persistent variables on Expando must not begin with '_'.  These
         variables considered to be 'protected' in Python, and are used
@@ -1171,7 +1341,7 @@ class Expando(Model):
     super(Expando, self).__init__(parent, key_name, _app, **kwds)
     self._dynamic_properties = {}
     for prop, value in kwds.iteritems():
-      if prop not in self.properties() and value is not None:
+      if prop not in self.properties():
         setattr(self, prop, value)
 
   def __setattr__(self, key, value):
@@ -1287,14 +1457,29 @@ class Expando(Model):
 
 class _BaseQuery(object):
   """Base class for both Query and GqlQuery."""
+  _compile = False
+  def __init__(self, model_class=None, keys_only=False, compile=True,
+               cursor=None):
+    """Constructor.
 
-  def __init__(self, model_class):
-    """Constructor."
-
-      Args:
-        model_class: Model class from which entities are constructed.
+    Args:
+      model_class: Model class from which entities are constructed.
+      keys_only: Whether the query should return full entities or only keys.
+      compile: Whether the query should also return a compiled query.
+      cursor: A compiled query from which to resume.
     """
     self._model_class = model_class
+    self._keys_only = keys_only
+    self._compile = compile
+    self._cursor = cursor
+
+  def is_keys_only(self):
+    """Returns whether this query is keys only.
+
+    Returns:
+      True if this query returns keys, False if it returns entities.
+    """
+    return self._keys_only
 
   def _get_query(self):
     """Subclass must override (and not call their super method).
@@ -1313,7 +1498,14 @@ class _BaseQuery(object):
     Returns:
       Iterator for this query.
     """
-    return _QueryIterator(self._model_class, iter(self._get_query().Run()))
+    self._compile = False
+    raw_query = self._get_query()
+    iterator = raw_query.Run()
+
+    if self._keys_only:
+      return iterator
+    else:
+      return _QueryIterator(self._model_class, iter(iterator))
 
   def __iter__(self):
     """Iterator for this query.
@@ -1350,7 +1542,10 @@ class _BaseQuery(object):
     Returns:
       Number of entities this query fetches.
     """
-    return self._get_query().Count(limit=limit)
+    self._compile = False
+    raw_query = self._get_query()
+    result = raw_query.Count(limit=limit)
+    return result
 
   def fetch(self, limit, offset=0):
     """Return a list of items selected using SQL-like limit and offset.
@@ -1375,8 +1570,51 @@ class _BaseQuery(object):
       raise ValueError('Arguments to fetch() must be >= 0')
     if limit == 0:
       return []
-    raw = self._get_query().Get(limit, offset)
-    return map(self._model_class.from_entity, raw)
+    raw_query = self._get_query()
+    raw = raw_query.Get(limit, offset)
+    if self._compile:
+      try:
+        self._compiled_query = raw_query.GetCompiledQuery()
+      except AssertionError, e:
+        self._compiled_query = e
+
+    if self._keys_only:
+      return raw
+    else:
+      if self._model_class is not None:
+        return [self._model_class.from_entity(e) for e in raw]
+      else:
+        return [class_for_kind(e.kind()).from_entity(e) for e in raw]
+
+  def cursor(self):
+    if not self._compile:
+      raise AssertionError('No cursor available, this action does not support '
+                           'cursors (try "fetch" instead)')
+    try:
+      if not self._compiled_query:
+        return self._compiled_query
+      if isinstance(self._compiled_query, Exception):
+        raise self._compiled_query
+      return base64.urlsafe_b64encode(self._compiled_query.Encode())
+    except AttributeError:
+      raise AssertionError('No cursor available, this query has not been '
+                           'executed')
+
+  def with_cursor(self, cursor):
+    try:
+      assert cursor, "Cursor cannot be empty"
+      cursor = datastore_pb.CompiledQuery(base64.urlsafe_b64decode(cursor))
+      assert cursor.IsInitialized()
+    except (AssertionError, TypeError), e:
+      raise datastore_errors.BadValueError(
+        'Invalid cursor %s. Details: %s' % (cursor, e))
+    except Exception, e:
+      if e.__class__.__name__ == 'ProtocolBufferDecodeError':
+        raise datastore_errors.BadValueError('Invalid cursor %s.' % cursor)
+      else:
+        raise
+    self._cursor = cursor
+    return self
 
   def __getitem__(self, arg):
     """Support for query[index] and query[start:stop].
@@ -1453,7 +1691,11 @@ class _QueryIterator(object):
     Raises:
       StopIteration when there are no more results in query.
     """
-    return self.__model_class.from_entity(self.__iterator.next())
+    if self.__model_class is not None:
+      return self.__model_class.from_entity(self.__iterator.next())
+    else:
+      entity = self.__iterator.next()
+      return class_for_kind(entity.kind()).from_entity(entity)
 
 
 def _normalize_query_parameter(value):
@@ -1517,23 +1759,88 @@ class Query(_BaseQuery):
        print story.title
   """
 
-  def __init__(self, model_class):
+  def __init__(self, model_class=None, keys_only=False, cursor=None):
     """Constructs a query over instances of the given Model.
 
     Args:
       model_class: Model class to build query for.
+      keys_only: Whether the query should return full entities or only keys.
+      cursor: A compiled query from which to resume.
     """
-    super(Query, self).__init__(model_class)
-    self.__query_set = {}
+    super(Query, self).__init__(model_class, keys_only, cursor=cursor)
+    self.__query_sets = [{}]
     self.__orderings = []
     self.__ancestor = None
 
-  def _get_query(self, _query_class=datastore.Query):
-    query = _query_class(self._model_class.kind(), self.__query_set)
-    if self.__ancestor is not None:
-      query.Ancestor(self.__ancestor)
-    query.Order(*self.__orderings)
-    return query
+  def _get_query(self,
+                 _query_class=datastore.Query,
+                 _multi_query_class=datastore.MultiQuery):
+    queries = []
+    for query_set in self.__query_sets:
+      if self._model_class is not None:
+        kind = self._model_class.kind()
+      else:
+        kind = None
+      query = _query_class(kind,
+                           query_set,
+                           keys_only=self._keys_only,
+                           compile=self._compile,
+                           cursor=self._cursor)
+      query.Order(*self.__orderings)
+      if self.__ancestor is not None:
+        query.Ancestor(self.__ancestor)
+      queries.append(query)
+
+    if (_query_class != datastore.Query and
+        _multi_query_class == datastore.MultiQuery):
+      warnings.warn(
+          'Custom _query_class specified without corresponding custom'
+          ' _query_multi_class. Things will break if you use queries with'
+          ' the "IN" or "!=" operators.', RuntimeWarning)
+      if len(queries) > 1:
+        raise datastore_errors.BadArgumentError(
+            'Query requires multiple subqueries to satisfy. If _query_class'
+            ' is overridden, _multi_query_class must also be overridden.')
+    elif (_query_class == datastore.Query and
+          _multi_query_class != datastore.MultiQuery):
+      raise BadArgumentError('_query_class must also be overridden if'
+                             ' _multi_query_class is overridden.')
+
+    if len(queries) == 1:
+      return queries[0]
+    else:
+      return _multi_query_class(queries, self.__orderings)
+
+  def __filter_disjunction(self, operations, values):
+    """Add a disjunction of several filters and several values to the query.
+
+    This is implemented by duplicating queries and combining the
+    results later.
+
+    Args:
+      operations: a string or list of strings. Each string contains a
+        property name and an operator to filter by. The operators
+        themselves must not require multiple queries to evaluate
+        (currently, this means that 'in' and '!=' are invalid).
+
+      values: a value or list of filter values, normalized by
+        _normalize_query_parameter.
+    """
+    if not isinstance(operations, (list, tuple)):
+      operations = [operations]
+    if not isinstance(values, (list, tuple)):
+      values = [values]
+
+    new_query_sets = []
+    for operation in operations:
+      if operation.lower().endswith('in') or operation.endswith('!='):
+        raise BadQueryError('Cannot use "in" or "!=" in a disjunction.')
+      for query_set in self.__query_sets:
+        for value in values:
+          new_query_set = copy.copy(query_set)
+          datastore._AddOrAppend(new_query_set, operation, value)
+          new_query_sets.append(new_query_set)
+    self.__query_sets = new_query_sets
 
   def filter(self, property_operator, value):
     """Add filter to query.
@@ -1544,12 +1851,45 @@ class Query(_BaseQuery):
 
     Returns:
       Self to support method chaining.
-    """
-    if isinstance(value, (list, tuple)):
-      raise BadValueError('Filtering on lists is not supported')
 
-    value = _normalize_query_parameter(value)
-    datastore._AddOrAppend(self.__query_set, property_operator, value)
+    Raises:
+      PropertyError if invalid property is provided.
+    """
+    match = _FILTER_REGEX.match(property_operator)
+    prop = match.group(1)
+    if match.group(3) is not None:
+      operator = match.group(3)
+    else:
+      operator = '=='
+
+    if self._model_class is None:
+      if prop != datastore_types._KEY_SPECIAL_PROPERTY:
+        raise BadQueryError(
+            'Only %s filters are allowed on kindless queries.' %
+            datastore_types._KEY_SPECIAL_PROPERTY)
+    elif prop in self._model_class._unindexed_properties:
+      raise PropertyError('Property \'%s\' is not indexed' % prop)
+
+    if operator.lower() == 'in':
+      if self._keys_only:
+        raise BadQueryError('Keys only queries do not support IN filters.')
+      elif not isinstance(value, (list, tuple)):
+        raise BadValueError('Argument to the "in" operator must be a list')
+      values = [_normalize_query_parameter(v) for v in value]
+      self.__filter_disjunction(prop + ' =', values)
+    else:
+      if isinstance(value, (list, tuple)):
+        raise BadValueError('Filtering on lists is not supported')
+      if operator == '!=':
+        if self._keys_only:
+          raise BadQueryError('Keys only queries do not support != filters.')
+        self.__filter_disjunction([prop + ' <', prop + ' >'],
+                                  _normalize_query_parameter(value))
+      else:
+        value = _normalize_query_parameter(value)
+        for query_set in self.__query_sets:
+          datastore._AddOrAppend(query_set, property_operator, value)
+
     return self
 
   def order(self, property):
@@ -1565,7 +1905,7 @@ class Query(_BaseQuery):
       Self to support method chaining.
 
     Raises:
-      PropertyError if invalid property name is provided.
+      PropertyError if invalid property is provided.
     """
     if property.startswith('-'):
       property = property[1:]
@@ -1573,10 +1913,20 @@ class Query(_BaseQuery):
     else:
       order = datastore.Query.ASCENDING
 
-    if not issubclass(self._model_class, Expando):
-      if (property not in self._model_class.properties() and
-          property not in datastore_types._SPECIAL_PROPERTIES):
-        raise PropertyError('Invalid property name \'%s\'' % property)
+    if self._model_class is None:
+      if (property != datastore_types._KEY_SPECIAL_PROPERTY or
+          order != datastore.Query.ASCENDING):
+        raise BadQueryError(
+            'Only %s ascending orders are supported on kindless queries' %
+            datastore_types._KEY_SPECIAL_PROPERTY)
+    else:
+      if not issubclass(self._model_class, Expando):
+        if (property not in self._model_class.properties() and
+            property not in datastore_types._SPECIAL_PROPERTIES):
+          raise PropertyError('Invalid property name \'%s\'' % property)
+
+      if property in self._model_class._unindexed_properties:
+        raise PropertyError('Property \'%s\' is not indexed' % property)
 
     self.__orderings.append((property, order))
     return self
@@ -1624,11 +1974,28 @@ class GqlQuery(_BaseQuery):
       query_string: Properly formatted GQL query string.
       *args: Positional arguments used to bind numeric references in the query.
       **kwds: Dictionary-based arguments for named references.
+
+    Raises:
+      PropertyError if the query filters or sorts on a property that's not
+      indexed.
     """
     from google.appengine.ext import gql
     app = kwds.pop('_app', None)
+
     self._proto_query = gql.GQL(query_string, _app=app)
-    super(GqlQuery, self).__init__(class_for_kind(self._proto_query._entity))
+    if self._proto_query._entity is not None:
+      model_class = class_for_kind(self._proto_query._entity)
+    else:
+      model_class = None
+    super(GqlQuery, self).__init__(model_class,
+                                   keys_only=self._proto_query._keys_only)
+
+    if model_class is not None:
+      for property, unused in (self._proto_query.filters().keys() +
+                               self._proto_query.orderings()):
+        if property in model_class._unindexed_properties:
+          raise PropertyError('Property \'%s\' is not indexed' % property)
+
     self.bind(*args, **kwds)
 
   def bind(self, *args, **kwds):
@@ -1655,38 +2022,55 @@ class GqlQuery(_BaseQuery):
   def run(self):
     """Override _BaseQuery.run() so the LIMIT clause is handled properly."""
     query_run = self._proto_query.Run(*self._args, **self._kwds)
-    return _QueryIterator(self._model_class, iter(query_run))
+    if self._keys_only:
+      return query_run
+    else:
+      return _QueryIterator(self._model_class, iter(query_run))
 
   def _get_query(self):
     return self._proto_query.Bind(self._args, self._kwds)
 
 
-class TextProperty(Property):
-  """A string that can be longer than 500 bytes.
+class UnindexedProperty(Property):
+  """A property that isn't indexed by either built-in or composite indices.
 
-  This type should be used for large text values to make sure the datastore
-  has good performance for queries.
+  TextProperty and BlobProperty derive from this class.
   """
+  def __init__(self, *args, **kwds):
+    """Construct property. See the Property class for details.
+
+    Raises:
+      ConfigurationError if indexed=True.
+    """
+    self._require_parameter(kwds, 'indexed', False)
+    kwds['indexed'] = True
+    super(UnindexedProperty, self).__init__(*args, **kwds)
 
   def validate(self, value):
-    """Validate text property.
+    """Validate property.
 
     Returns:
       A valid value.
 
     Raises:
-      BadValueError if property is not instance of 'Text'.
+      BadValueError if property is not an instance of data_type.
     """
-    if value is not None and not isinstance(value, Text):
+    if value is not None and not isinstance(value, self.data_type):
       try:
-        value = Text(value)
+        value = self.data_type(value)
       except TypeError, err:
         raise BadValueError('Property %s must be convertible '
-                            'to a Text instance (%s)' % (self.name, err))
-    value = super(TextProperty, self).validate(value)
-    if value is not None and not isinstance(value, Text):
-      raise BadValueError('Property %s must be a Text instance' % self.name)
+                            'to a %s instance (%s)' %
+                            (self.name, self.data_type.__name__, err))
+    value = super(UnindexedProperty, self).validate(value)
+    if value is not None and not isinstance(value, self.data_type):
+      raise BadValueError('Property %s must be a %s instance' %
+                          (self.name, self.data_type.__name__))
     return value
+
+
+class TextProperty(UnindexedProperty):
+  """A string that can be longer than 500 bytes."""
 
   data_type = Text
 
@@ -1801,32 +2185,8 @@ class PostalAddressProperty(_CoercingProperty):
   data_type = PostalAddress
 
 
-class BlobProperty(Property):
-  """A string that can be longer than 500 bytes.
-
-  This type should be used for large binary values to make sure the datastore
-  has good performance for queries.
-  """
-
-  def validate(self, value):
-    """Validate blob property.
-
-    Returns:
-      A valid value.
-
-    Raises:
-      BadValueError if property is not instance of 'Blob'.
-    """
-    if value is not None and not isinstance(value, Blob):
-      try:
-        value = Blob(value)
-      except TypeError, err:
-        raise BadValueError('Property %s must be convertible '
-                            'to a Blob instance (%s)' % (self.name, err))
-    value = super(BlobProperty, self).validate(value)
-    if value is not None and not isinstance(value, Blob):
-      raise BadValueError('Property %s must be a Blob instance' % self.name)
-    return value
+class BlobProperty(UnindexedProperty):
+  """A byte string that can be longer than 500 bytes."""
 
   data_type = Blob
 
@@ -2181,9 +2541,15 @@ class BooleanProperty(Property):
 class UserProperty(Property):
   """A user property."""
 
-  def __init__(self, verbose_name=None, name=None,
-               required=False, validator=None, choices=None,
-               auto_current_user=False, auto_current_user_add=False):
+  def __init__(self,
+               verbose_name=None,
+               name=None,
+               required=False,
+               validator=None,
+               choices=None,
+               auto_current_user=False,
+               auto_current_user_add=False,
+               indexed=True):
     """Initializes this Property with the given options.
 
     Note: this does *not* support the 'default' keyword argument.
@@ -2200,11 +2566,13 @@ class UserProperty(Property):
         each time the entity is written to the datastore.
       auto_current_user_add: If true, the value is set to the current user
         the first time the entity is written to the datastore.
+      indexed: Whether property is indexed.
     """
     super(UserProperty, self).__init__(verbose_name, name,
                                        required=required,
                                        validator=validator,
-                                       choices=choices)
+                                       choices=choices,
+                                       indexed=indexed)
     self.auto_current_user = auto_current_user
     self.auto_current_user_add = auto_current_user_add
 
@@ -2249,7 +2617,6 @@ class UserProperty(Property):
   data_type = users.User
 
 
-
 class ListProperty(Property):
   """A property that stores a list of things.
 
@@ -2275,13 +2642,14 @@ class ListProperty(Property):
       raise TypeError('Item type should be a type object')
     if item_type not in _ALLOWED_PROPERTY_TYPES:
       raise ValueError('Item type %s is not acceptable' % item_type.__name__)
-    if 'required' in kwds and kwds['required'] is not True:
-      raise ValueError('List values must be required')
+    if issubclass(item_type, (Blob, Text)):
+      self._require_parameter(kwds, 'indexed', False)
+      kwds['indexed'] = True
+    self._require_parameter(kwds, 'required', True)
     if default is None:
       default = []
     self.item_type = item_type
     super(ListProperty, self).__init__(verbose_name,
-                                       required=True,
                                        default=default,
                                        **kwds)
 
@@ -2359,8 +2727,11 @@ class ListProperty(Property):
     Returns:
       validated list appropriate to save in the datastore.
     """
-    return self.validate_list_contents(
+    value = self.validate_list_contents(
         super(ListProperty, self).get_value_for_datastore(model_instance))
+    if self.validator:
+      self.validator(value)
+    return value
 
 
 class StringListProperty(ListProperty):
@@ -2452,8 +2823,13 @@ class ReferenceProperty(Property):
 
     if self.collection_name is None:
       self.collection_name = '%s_set' % (model_class.__name__.lower())
-    if hasattr(self.reference_class, self.collection_name):
-      raise DuplicatePropertyError('Class %s already has property %s'
+    existing_prop = getattr(self.reference_class, self.collection_name, None)
+    if existing_prop is not None:
+      if not (isinstance(existing_prop, _ReverseReferenceProperty) and
+              existing_prop._prop_name == property_name and
+              existing_prop._model.__name__ == model_class.__name__ and
+              existing_prop._model.__module__ == model_class.__module__):
+        raise DuplicatePropertyError('Class %s already has property %s '
                                    % (self.reference_class.__name__,
                                       self.collection_name))
     setattr(self.reference_class,
@@ -2601,12 +2977,22 @@ class _ReverseReferenceProperty(Property):
     Constructor does not take standard values of other property types.
 
     Args:
-      model: Model that this property is a collection of.
-      property: Foreign property on referred model that points back to this
-        properties entity.
+      model: Model class that this property is a collection of.
+      property: Name of foreign property on referred model that points back
+        to this properties entity.
     """
     self.__model = model
     self.__property = prop
+
+  @property
+  def _model(self):
+    """Internal helper to access the model class, read-only."""
+    return self.__model
+
+  @property
+  def _prop_name(self):
+    """Internal helper to access the property name, read-only."""
+    return self.__property
 
   def __get__(self, model_instance, model_class):
     """Fetches collection of model instances of this collection property."""
@@ -2622,5 +3008,7 @@ class _ReverseReferenceProperty(Property):
 
 
 run_in_transaction = datastore.RunInTransaction
+run_in_transaction_custom_retries = datastore.RunInTransactionCustomRetries
 
 RunInTransaction = run_in_transaction
+RunInTransactionCustomRetries = run_in_transaction_custom_retries
