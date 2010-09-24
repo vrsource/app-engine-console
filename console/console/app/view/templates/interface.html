@@ -117,7 +117,7 @@
                                 Settings:
                             {% endif %}
         
-                            {% ifequal setting.type 'hidden' %}
+                            {% ifequal setting.type "hidden" %}
                                 <input type="hidden" id="setting_{{setting.id}}" value="{{setting.value}}">
                             {% else %}
                                 <select id="setting_{{setting.id}}">
